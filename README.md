@@ -10,8 +10,8 @@ This is still undergoing development.
 [Compilation]
 javac -classpath .:beast.jar TIPars.java
 
-[Run]
-java -classpath .:beast.jar TIPars
+[Run]\n
+java -classpath .:beast.jar TIPars\n
 ... answer the following question interactively ...
 Enter your input nexus tree file: RefTree.nex
 Enter your input taxa seq file [fasta name is taxaname]: RefSeq.fas
