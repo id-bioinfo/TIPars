@@ -1,8 +1,7 @@
 # TIPars
-
-Taxa Insertion by Parsimony (TIPars) is Java program for inserting taxa into a reference phylogeny based on parsimony criterion 
-Reference tree is maintained unchanged (except a new branch added) in the process.
-Length of the new branch(taxon) is calculated simply as P-distance. (Can use JC69, K81, ... given the known substitution model)
+Taxa Insertion by Parsimony (TIPars) is Java program for inserting taxa into a reference phylogeny based on parsimony criterion. 
+Ancestral sequences of all internal nodes are required as an input. Reference tree is maintained unchanged (except a new branch added) in the process. 
+Length of the new branch(taxon) is calculated simply as P-distance (Can use JC69, K81, ... given the known substitution model, pending to be implemented). 
 This program uses a specific and modified set of BEAST library (included in the repository; the official BEAST version cannot be used by ours).
 This is still undergoing development.
 
