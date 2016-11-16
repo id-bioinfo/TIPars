@@ -462,7 +462,7 @@ public class TIPars{
 		if(fasline.matches("^>.+")){
 		    desc = fasline;
 		    fasline = br2.readLine();
-		    while(!fasline.matches("^>.+")) {
+		    while(fasline != null && !fasline.matches("^>.+")) {
 			seqseq += fasline;
 			fasline = br2.readLine();
 		    }
