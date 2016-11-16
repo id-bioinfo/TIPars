@@ -11,6 +11,7 @@ import dr.evolution.datatype.DataType;
 import dr.evolution.datatype.GeneralDataType;
 import dr.evolution.datatype.Nucleotides;
 import dr.evolution.util.Taxon;
+import dr.evolution.util.TaxonList;
 import dr.stats.DiscreteStatistics;
 import java.io.*;
 import java.util.HashMap;
@@ -443,6 +444,42 @@ public class TIPars{
 	}
     }
 
+
+    public static SimpleAlignment readFastaAlignmentFile(String fn){
+	/////////// Read the sequence/state file (expect fasta format)
+	SimpleAlignment sa = null;
+	try{ // This part is a parser for general data type. Also, it parser *manually* into SimpleAlignment. There is a FastaImporter in new BEAST package (below), but not make it work yet.
+	    sa = new SimpleAlignment();
+	    char[] agg = {'H', 'A', 'L', 'I', 'K', 'M', 'Y', 'C', 'E', 'P', 'G', 'S', 'D', 'T', 'F', 'V', 'W', 'N', 'X', '?', '-'};
+	    GeneralDataType dt1 = new GeneralDataType(agg);
+	    sa.setDataType(dt1);
+	    BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
+	    String fasline = br2.readLine();
+	    String desc;
+	    while(fasline != null){
+		fasline = fasline.replaceAll("\n", "");
+		String seqseq = "";
+		if(fasline.matches("^>.+")){
+		    desc = fasline;
+		    fasline = br2.readLine();
+		    while(!fasline.matches("^>.+")) {
+			seqseq += fasline;
+			fasline = br2.readLine();
+		    }
+		    desc = desc.replaceAll(">", "");
+		    seqseq = seqseq.replaceAll("\n", "");
+		    // manually make the alignment. Taxon is supposed to be name of the sequence
+		    sa.addSequence(new dr.evolution.sequence.Sequence(new Taxon(desc), seqseq));
+		}
+		// fasline now store desc for next sequence
+	    }
+	}
+	catch(Exception e){
+	    e.printStackTrace();
+	}
+	return sa;
+    }
+
     public static SimpleAlignment readSingleLineFastaAlignmentFile(String fn){
 	/////////// Read the sequence/state file (expect fasta format)
 	SimpleAlignment sa = null;
@@ -570,6 +607,7 @@ public class TIPars{
 	    PrintStream fw = new PrintStream(new FileOutputStream(new File(fn)));
 	    NexusExporter kne = new NexusExporter(fw); // export the tree *with attributes* to the output nexus file.
 	    Tree[] ts = new Tree[1];
+	    ts[0] = t;
 	    kne.exportTrees(ts, true);
 	    fw.close();
 	}
