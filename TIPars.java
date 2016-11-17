@@ -6,6 +6,7 @@ import dr.evolution.tree.Tree;
 import dr.evolution.tree.FlexibleTree;
 import dr.app.tools.NexusExporter;
 import dr.evolution.io.NexusImporter;
+import dr.evolution.io.NewickImporter;
 import dr.evolution.io.FastaImporter;
 import dr.evolution.datatype.DataType;
 import dr.evolution.datatype.GeneralDataType;

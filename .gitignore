@@ -3,5 +3,5 @@ src
 .DS_Store
 *~
 *class
-src_beast_1.8.2
-api_beast_1.4.8
+beast_1.8.2
+api

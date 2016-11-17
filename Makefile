@@ -12,3 +12,6 @@ testReadFASTA:
 	echo "";\
 	java -classpath .:beast.jar testReadFASTA
 
+testTreeReader:
+	javac -classpath .:beast.jar testTreeReader.java;\
+	java -classpath .:beast.jar testTreeReader
