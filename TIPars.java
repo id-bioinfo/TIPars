@@ -48,6 +48,7 @@ public class TIPars{
 	for(int i=0; i<mytree.getInternalNodeCount(); i++){
 	    FlexibleNode n = (FlexibleNode)mytree.getInternalNode(i);
 	    int t = ancseq.getTaxonIndex((String)(n.getAttribute(this.internalnode_nidname)));
+	    //System.out.println(t);
 	    if(t >= 0){
 		node2Sseq.put(n, ancseq.getAlignedSequenceString(t));
 	    }
@@ -95,17 +96,17 @@ public class TIPars{
 		///////////                 My be try to solve this problem later.
 		////////////////////////////////////////////////////
 		if(nodeA.isRoot()){
-		    if(DEBUG){ System.out.println("Root attribute - "+ nodeA.getAttribute("nid")); }
+		    if(DEBUG){ System.out.println("Root attribute - "+ nodeA.getAttribute(this.internalnode_nidname)); }
 		}
 		else{
 		    String nodeAseq = getSequenceByNode(nodeA);
 		    String nodeBseq = getSequenceByNode(nodeB);
 		    int[] scores = new int[3];
 		    if(nodeAseq == null){
-			if(DEBUG){ System.out.println("nodeAseq cannot find seq - "+nodeA.getAttribute("nid")); }
+			if(DEBUG){ System.out.println("nodeAseq cannot find seq - "+nodeA.getAttribute(this.internalnode_nidname)); }
 		    }
 		    else if(nodeBseq == null){
-			if(DEBUG){ System.out.println("nodeBseq cannot find seq - "+nodeB.getAttribute("nid")); }
+			if(DEBUG){ System.out.println("nodeBseq cannot find seq - "+nodeB.getAttribute(this.internalnode_nidname)); }
 		    }
 		    else{
 			Integer[] scores1 = new Integer[3];
@@ -142,8 +143,8 @@ public class TIPars{
 	selected_nodeQ.setLength(selectedScores[2]/((double)getAlignmentLength()));
 	FlexibleNode selected_nodeP = new FlexibleNode();
 	// set the attributes of newly added node.
-	selected_nodeP.setAttribute("nid", pid);
-	selected_nodeQ.setAttribute("nid", qid);
+	selected_nodeP.setAttribute(this.internalnode_nidname, pid);
+	selected_nodeQ.setAttribute(this.internalnode_nidname, qid);
 
 	if(selectedScores[0] == 0){ // A-P is zero branch length, meaning that Q is inserted into A directly.
 	    selected_nodeP = selected_nodeA;
@@ -585,10 +586,18 @@ public class TIPars{
 
 
 	    // Read the tree from the nexus tree file. Note that nexus can also hold alignment, but not intended in this example.
+
+	    /*
 	    NexusImporter tni = new NexusImporter(new FileReader(intfn));
 	    Tree[] trees = (Tree[])tni.importTrees(taxa_align);
 	    trees[0] = cleanStringAttributeInTree(trees[0]);
 	    TIPars myAdd = new TIPars(taxa_align, anc_align, trees[0], "nid");
+	    */
+
+	    NewickImporter tni = new NewickImporter(new FileReader(intfn));
+	    Tree tree = tni.importTree(taxa_align);
+	    TIPars myAdd = new TIPars(taxa_align, anc_align, tree, "label");
+
 	    Tree outtree = myAdd.addQuerySequence(query_align[0], query_align[1], "q1", "p1", outdis, nidname, attname, new double[3]); // q1 and p1 are the attributes of nodeQ and nodeP.
 	    PrintStream fw = new PrintStream(new FileOutputStream(new File(outfn)));
 	    NexusExporter kne = new NexusExporter(fw); // export the tree *with attributes* to the output nexus file.
