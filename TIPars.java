@@ -95,37 +95,41 @@ public class TIPars{
 		///////////                 Reason: 1) BEAST cannot intake root attribute; 2) HYPHY will not reconstruct root anc seq.
 		///////////                 My be try to solve this problem later.
 		////////////////////////////////////////////////////
-		if(nodeA.isRoot()){
-		    if(DEBUG){ System.out.println("Root attribute - "+ nodeA.getAttribute(this.internalnode_nidname)); }
+
+		// actually BEAST can parse root attribute
+		//
+		// if(nodeA.isRoot()){
+		//     if(DEBUG){ System.out.println("Root attribute - "+ nodeA.getAttribute(this.internalnode_nidname)); }
+		// }
+		// else{
+
+		String nodeAseq = getSequenceByNode(nodeA);
+		String nodeBseq = getSequenceByNode(nodeB);
+		int[] scores = new int[3];
+		if(nodeAseq == null){
+		    if(DEBUG){ System.out.println("nodeAseq cannot find seq - "+nodeA.getAttribute(this.internalnode_nidname)); }
+		}
+		else if(nodeBseq == null){
+		    if(DEBUG){ System.out.println("nodeBseq cannot find seq - "+nodeB.getAttribute(this.internalnode_nidname)); }
 		}
 		else{
-		    String nodeAseq = getSequenceByNode(nodeA);
-		    String nodeBseq = getSequenceByNode(nodeB);
-		    int[] scores = new int[3];
-		    if(nodeAseq == null){
-			if(DEBUG){ System.out.println("nodeAseq cannot find seq - "+nodeA.getAttribute(this.internalnode_nidname)); }
-		    }
-		    else if(nodeBseq == null){
-			if(DEBUG){ System.out.println("nodeBseq cannot find seq - "+nodeB.getAttribute(this.internalnode_nidname)); }
-		    }
-		    else{
-			Integer[] scores1 = new Integer[3];
-			String tmp_nodePseq = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, scores1);
-			scores[0] = scores1[0].intValue();
-			scores[1] = scores1[1].intValue();
-			scores[2] = scores1[2].intValue();
-			if(scores[2] < minQScore){
-			    if(DEBUG) System.out.println("Score: "+scores[2]);
-			    String tmp_nodePseq3 = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, scores1);
-			    minQScore = scores[2];
-			    selectedScores = scores; // the mutations(scores) at A-P, B-P and P-Q branch after taxa insertion.
-			    nodePseq = tmp_nodePseq;
-			    selectedNodeBIndex = i;
-			    selectedBnid = (String)nodeB.getAttribute(nidname);
-			    selectedBatt = (String)nodeB.getAttribute(attname);
-			}
+		    Integer[] scores1 = new Integer[3];
+		    String tmp_nodePseq = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, scores1);
+		    scores[0] = scores1[0].intValue();
+		    scores[1] = scores1[1].intValue();
+		    scores[2] = scores1[2].intValue();
+		    if(scores[2] < minQScore){
+			if(DEBUG) System.out.println("Score: "+scores[2]);
+			String tmp_nodePseq3 = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, scores1);
+			minQScore = scores[2];
+			selectedScores = scores; // the mutations(scores) at A-P, B-P and P-Q branch after taxa insertion.
+			nodePseq = tmp_nodePseq;
+			selectedNodeBIndex = i;
+			selectedBnid = (String)nodeB.getAttribute(nidname);
+			selectedBatt = (String)nodeB.getAttribute(attname);
 		    }
 		}
+		// }
 	    }
 	}
 
@@ -398,32 +402,38 @@ public class TIPars{
 	a = a.toUpperCase();
 	b = b.toUpperCase();
 	c = c.toUpperCase(); // c is Q
-	String p = "";
+	// String p = "";
+	StringBuilder p = new StringBuilder(c);
 	for(int i=0; i<a.length(); i++){
 	    char ai = a.charAt(i);
 	    char bi = b.charAt(i);
 	    char ci = c.charAt(i);
 	    if(ai == ci && ai == bi){
+		// p += ai;
 		// do nothing
 		if(DEBUG) System.out.print("AAA");
 	    }
 	    else if(ai != ci && ci != bi && ai != bi){   // ATC
-		p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
+		//p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
+		p.setCharAt(i, ai);
 		scores[2]++;
 		if(DEBUG) System.out.print("ATC");
 	    }
 	    else if(ai == bi && ci != bi){   // AAT
-		p += ai;
+		//p += ai;
+		p.setCharAt(i, ai);
 		scores[2]++;
 		if(DEBUG) System.out.print("AAT");
 	    }
 	    else if(ai != bi && ci == bi){   // ATT
-		p += bi;
+		//p += bi;
+		p.setCharAt(i, bi);
 		scores[0]++;
 		if(DEBUG) System.out.print("ATT");
 	    }
 	    else if(ai == ci && ci != bi){   // TAT
-		p += ai;
+		// p += ai;
+		p.setCharAt(i, ai);
 		scores[1]++;
 		if(DEBUG) System.out.print("TAT");
 	    }
@@ -433,7 +443,9 @@ public class TIPars{
 	scores1[0] = new Integer(scores[0]);
 	scores1[1] = new Integer(scores[1]);
 	scores1[2] = new Integer(scores[2]);
-	return p;
+	String pseq = p.toString();
+	//	System.out.println(pseq.length() + "\t" + c.length());
+	return pseq;
     }
 
 
@@ -580,9 +592,10 @@ public class TIPars{
 
 	    }
 	    /////////// Read the sequence/state file (expect fasta format)
-	    SimpleAlignment taxa_align = readSingleLineFastaAlignmentFile(insfn);
-	    SimpleAlignment anc_align = readSingleLineFastaAlignmentFile(inafn);
+	    SimpleAlignment taxa_align = readFastaAlignmentFile(insfn);
+	    SimpleAlignment anc_align = readFastaAlignmentFile(inafn);
 	    String[] query_align = readSingleLineQueryFastaAlignmentFile(inqfn);
+	    //System.out.println(query_align[0] + "\n\n\n" + query_align[1]);
 
 
 	    // Read the tree from the nexus tree file. Note that nexus can also hold alignment, but not intended in this example.
