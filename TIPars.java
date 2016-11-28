@@ -120,7 +120,7 @@ public class TIPars{
 		    scores[2] = scores1[2].intValue();
 		    if(scores[2] < minQScore){
 			if(DEBUG) System.out.println("Score: "+scores[2]);
-			String tmp_nodePseq3 = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, scores1);
+			// String tmp_nodePseq3 = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, scores1);
 			minQScore = scores[2];
 			selectedScores = scores; // the mutations(scores) at A-P, B-P and P-Q branch after taxa insertion.
 			nodePseq = tmp_nodePseq;
