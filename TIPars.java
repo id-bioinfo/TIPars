@@ -416,7 +416,13 @@ public class TIPars{
 	    else if(ai != ci && ci != bi && ai != bi){   // ATC
 		//p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
 		p.setCharAt(i, ai);
+		scores[1]++;
 		scores[2]++;
+
+		// if asign ci
+		// scores[0]++;
+		// scores[1]++;
+
 		if(DEBUG) System.out.print("ATC");
 	    }
 	    else if(ai == bi && ci != bi){   // AAT
@@ -526,6 +532,15 @@ public class TIPars{
 	return sa;
     }
 
+    public static String[] readQueryFastaAlignmentFile(String fn) {
+	SimpleAlignment sa = readFastaAlignmentFile(fn);
+	String[] res = new String[2];
+	res[0] = sa.getTaxonId(0);
+	res[1] = sa.getAlignedSequenceString(0);
+	return res;
+    }
+
+
     // Read query fasta, only read one entry.
     public static String[] readSingleLineQueryFastaAlignmentFile(String fn){
 	/////////// Read the sequence/state file (expect fasta format)
@@ -594,7 +609,7 @@ public class TIPars{
 	    /////////// Read the sequence/state file (expect fasta format)
 	    SimpleAlignment taxa_align = readFastaAlignmentFile(insfn);
 	    SimpleAlignment anc_align = readFastaAlignmentFile(inafn);
-	    String[] query_align = readSingleLineQueryFastaAlignmentFile(inqfn);
+	    String[] query_align = readQueryFastaAlignmentFile(inqfn);
 	    //System.out.println(query_align[0] + "\n\n\n" + query_align[1]);
 
 
