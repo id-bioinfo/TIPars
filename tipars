@@ -4,7 +4,7 @@ cmd_args <- commandArgs(trailingOnly = FALSE)
 exec_script <- cmd_args[which(grepl("--file", cmd_args))[1]]
 exec_script <- sub("--file=", "", exec_script)
 
-exec_dir <- sub("\\./", "", dirname(exec_script))
+exec_dir <- dirname(exec_script)
 
 suppressPackageStartupMessages(library("optparse"))
 
