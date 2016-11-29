@@ -9,10 +9,10 @@ import dr.evolution.tree.FlexibleNode;
 
 public class testTreeReader {
     public static void main(String args[]) {
-	String intfn = "FourExamples/Try1_KC542905/NDV_fullg.nex";
-	String insfn = "FourExamples/Try1_KC542905/NDV_fullg.fas";
-	String ancfn = "FourExamples/Try1_KC542905/anc_NDV_fullg.fas";
-	String nwk = "FourExamples/Try1_KC542905/NDV_fullg.tree";
+	String intfn = "../FourExamples/Try1_KC542905/NDV_fullg.nex";
+	String insfn = "../FourExamples/Try1_KC542905/NDV_fullg.fas";
+	String ancfn = "../FourExamples/Try1_KC542905/anc_NDV_fullg.fas";
+	String nwk = "../FourExamples/Try1_KC542905/NDV_fullg.tree";
 
 	TIPars  x = new TIPars();
 	SimpleAlignment taxa_align = x.readFastaAlignmentFile(insfn);

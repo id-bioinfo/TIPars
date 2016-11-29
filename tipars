@@ -18,7 +18,8 @@ option_list <- list(
 
 opt <- parse_args(OptionParser(option_list=option_list))
 
-TIPars <- paste0("java -classpath ", ".:", exec_dir, ":", exec_dir, "/", "beast.jar ", "TIPars")
+## TIPars <- paste0("java -classpath ", ".:", exec_dir, ":", exec_dir, "/", "beast.jar ", "TIPars")
+TIPars <- paste0("java -jar ", exec_dir, "/", "TIPars.jar")
 
 cmd <- paste(TIPars, opt$tree, opt$sequence, opt$ancseq, opt$query, opt$output, "0")
 

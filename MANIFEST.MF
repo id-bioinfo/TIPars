@@ -1,0 +1,4 @@
+Manifest-Version: 1.0
+Created-By: Guangchuang YU
+Class-Path: beast.jar
+Main-Class: TIPars
