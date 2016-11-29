@@ -1,0 +1,28 @@
+#!/usr/bin/env Rscript
+
+cmd_args <- commandArgs(trailingOnly = FALSE)
+exec_script <- cmd_args[which(grepl("--file", cmd_args))[1]]
+exec_script <- sub("--file=", "", exec_script)
+
+exec_dir <- sub("\\./", "", dirname(exec_script))
+
+suppressPackageStartupMessages(library("optparse"))
+
+option_list <- list(
+    make_option(c("-t", "--tree"), help="tree file, in newick format"),
+    make_option(c("-s", "--sequence"), help="fasta file contains aligned taxa sequences"),
+    make_option(c("-a", "--ancseq"), help="fasta file contains aligned ancestral sequences"),
+    make_option(c("-q", "--query"), help="fasta file contains 1 query seqence"),
+    make_option(c("-o", "--output"), help="output NEXUS file name")
+    )
+
+opt <- parse_args(OptionParser(option_list=option_list))
+
+TIPars <- paste0("java -classpath ", ".:", exec_dir, ":", exec_dir, "/", "beast.jar ", "TIPars")
+
+cmd <- paste(TIPars, opt$tree, opt$sequence, opt$ancseq, opt$query, opt$output, "0")
+
+print(cmd)
+system(cmd)
+
+

@@ -197,6 +197,13 @@ public class TIPars{
 	// myBandBPbranch.setBrlen(new Double(afterscores[1]));  // For EVALUATION - take update branch length(sub/site, not absolute mutations).
 
 	if(printDisInfoOnScreen) System.out.println(""+selectedScores[0]+"\t"+selectedScores[1]+"\t"+original_B+"\t"+selectedScores[2]+"\t"+afterscores[0]+"\t"+afterscores[1]+"\t"+afterscores[2]+"\t"+selectedBnid+"\t"+selectedBatt+"\n");
+
+	System.out.println("\nquery sequence: " + qname);
+	System.out.println("insert to edge: " + selectedBnid + "-" + (String)selected_nodeA.getAttribute(nidname));
+	System.out.println("distal_length: " + afterscores[0]);
+	System.out.println("pendant_length: " + afterscores[2] + "\n");
+
+
 	mynewTree.endTreeEdit();
 	if(DEBUG) System.out.println("TaxonCount: "+mynewTree.getTaxonCount());
 	mynewTree.toAdoptNodes((FlexibleNode)mynewTree.getRoot());
@@ -575,11 +582,11 @@ public class TIPars{
 	String inqfn = "";
 	String outfn = "";
 	//String outdisfn = "";
-	String nidname = "nid";
+	String nidname = "label";
 	String attname = "GenName";
 	boolean outdis = true;
 	try{
-	    if(args.length != 8){
+	    if(!(args.length == 8 || args.length == 6)){
 		intfn = getShellInput("Enter your input nexus tree file: ");
 		insfn = getShellInput("Enter your input taxa seq file [fasta name is taxaname]: ");
 		inafn = getShellInput("Enter your input ancestral seq file [fasta name is nid]: ");
@@ -624,7 +631,7 @@ public class TIPars{
 
 	    NewickImporter tni = new NewickImporter(new FileReader(intfn));
 	    Tree tree = tni.importTree(taxa_align);
-	    TIPars myAdd = new TIPars(taxa_align, anc_align, tree, "label");
+	    TIPars myAdd = new TIPars(taxa_align, anc_align, tree, nidname);
 
 	    Tree outtree = myAdd.addQuerySequence(query_align[0], query_align[1], "q1", "p1", outdis, nidname, attname, new double[3]); // q1 and p1 are the attributes of nodeQ and nodeP.
 	    PrintStream fw = new PrintStream(new FileOutputStream(new File(outfn)));
