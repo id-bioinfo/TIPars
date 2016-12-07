@@ -133,7 +133,7 @@ public class TIPars{
 	    }
 	}
 
-
+	if (DEBUG) System.out.println("selectedScores: " + selectedScores[0] + "\t" + selectedScores[1] + "\t" + selectedScores[2]);
 	// add the query node to the Tree copy.
 	double[] afterscores = {0.0, 0.0, 0.0};
 	MyFlexibleTree mynewTree = new MyFlexibleTree(mytree, true);
@@ -192,6 +192,9 @@ public class TIPars{
 	ABQ_brlen[0] = afterscores[0];
 	ABQ_brlen[1] = afterscores[1];
 	ABQ_brlen[2] = afterscores[2];
+
+	if (DEBUG) System.out.println("ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2] + "\t" + selectedScores[2]*(ABQ_brlen[0]+ABQ_brlen[1])/(selectedScores[0]+selectedScores[1]));
+
 	myBandBPbranch = new FlexibleNodeBranch<FlexibleNode, Double>((FlexibleNode)(mytree.getNode(selectedNodeBIndex)), new Double(afterscores[1])); // For EVALUATION
 	// myBandBPbranch.setNode(myTree.getNode(selectedNodeBIndex)); // For EVALUATION - must take the original tree node.
 	// myBandBPbranch.setBrlen(new Double(afterscores[1]));  // For EVALUATION - take update branch length(sub/site, not absolute mutations).
@@ -410,6 +413,9 @@ public class TIPars{
 	b = b.toUpperCase();
 	c = c.toUpperCase(); // c is Q
 	// String p = "";
+	boolean precedingGapC = true;
+	boolean precedingGapB = true;
+
 	StringBuilder p = new StringBuilder(c);
 	for(int i=0; i<a.length(); i++){
 	    char ai = a.charAt(i);
@@ -418,37 +424,83 @@ public class TIPars{
 	    if(ai == ci && ai == bi){
 		// p += ai;
 		// do nothing
-		if(DEBUG) System.out.print("AAA");
+		//if(DEBUG) System.out.print("AAA");
 	    }
 	    else if(ai != ci && ci != bi && ai != bi){   // ATC
 		//p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
 		p.setCharAt(i, ai);
-		scores[1]++;
-		scores[2]++;
+
+		// consider A-C
+		if (bi == '-') {
+		    if (!precedingGapB) {
+			scores[1]++;
+		    }
+		} else {
+		    if (precedingGapB) {
+			precedingGapB = false;
+		    }
+		    scores[1]++;
+		}
+
+		// consider AT-
+		if (ci == '-') {
+		    if (!precedingGapC) {
+			scores[2]++;
+		    }
+		} else {
+		    if (precedingGapC) {
+			precedingGapC = false;
+		    }
+		    scores[2]++;
+		}
 
 		// if asign ci
 		// scores[0]++;
 		// scores[1]++;
 
-		if(DEBUG) System.out.print("ATC");
+		//if(DEBUG) System.out.print("ATC");
 	    }
 	    else if(ai == bi && ci != bi){   // AAT
 		//p += ai;
 		p.setCharAt(i, ai);
-		scores[2]++;
-		if(DEBUG) System.out.print("AAT");
+
+		// consider AA-
+		if (ci == '-') {
+		    if (!precedingGapC) {
+			scores[2]++;
+		    }
+		} else {
+		    if (precedingGapC) {
+			precedingGapC = false;
+		    }
+		    scores[2]++;
+		}
+
+		// if(DEBUG) System.out.print("AAT");
 	    }
 	    else if(ai != bi && ci == bi){   // ATT
 		//p += bi;
 		p.setCharAt(i, bi);
 		scores[0]++;
-		if(DEBUG) System.out.print("ATT");
+		//if(DEBUG) System.out.print("ATT");
 	    }
 	    else if(ai == ci && ci != bi){   // TAT
 		// p += ai;
 		p.setCharAt(i, ai);
-		scores[1]++;
-		if(DEBUG) System.out.print("TAT");
+
+		// consider T-T
+		if (bi == '-') {
+		    if (!precedingGapB) {
+			scores[1]++;
+		    }
+		} else {
+		    if (precedingGapB) {
+			precedingGapB = false;
+		    }
+		    scores[1]++;
+		}
+
+		//if(DEBUG) System.out.print("TAT");
 	    }
 	    else if(DEBUG){ System.out.println("Unmatched ABQ type"); }
 	}
