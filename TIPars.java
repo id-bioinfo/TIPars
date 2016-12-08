@@ -249,7 +249,9 @@ public class TIPars{
 	int n = nodePseq.length();
 
 	for (int i=0; i<n; i++) {
-	    if (nodePseq.charAt(i) == 'A' && nodeQseq.charAt(i) == 'G') {
+	    if (nodePseq.charAt(i) == nodeQseq.charAt(i)) {
+		continue;
+	    } else if (nodePseq.charAt(i) == 'A' && nodeQseq.charAt(i) == 'G') {
 		S++;
 	    } else if (nodePseq.charAt(i) == 'G' && nodeQseq.charAt(i) == 'A') {
 		S++;
