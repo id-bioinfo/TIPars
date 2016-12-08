@@ -248,7 +248,17 @@ public class TIPars{
 	int V = 0;
 	int n = nodePseq.length();
 
+	boolean precedingGapQ = true;
+
 	for (int i=0; i<n; i++) {
+	    if (nodeQseq.charAt(i) != '-') {
+		precedingGapQ = false;
+	    }
+
+	    if (precedingGapQ && nodeQseq.charAt(i) == '-') {
+		    continue;
+	    }
+
 	    if (nodePseq.charAt(i) == nodeQseq.charAt(i)) {
 		continue;
 	    } else if (nodePseq.charAt(i) == 'A' && nodeQseq.charAt(i) == 'G') {
