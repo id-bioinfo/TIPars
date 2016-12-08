@@ -144,7 +144,9 @@ public class TIPars{
 	FlexibleNode selected_nodeA = selected_nodeB.getParent();
 	Taxon qtaxon = new Taxon(qname);
 	FlexibleNode selected_nodeQ = new FlexibleNode(qtaxon);
-	selected_nodeQ.setLength(selectedScores[2]/((double)getAlignmentLength()));
+	// Q-P pendent length
+	double p = selectedScores[2]/((double)getAlignmentLength());
+	selected_nodeQ.setLength(JC69(p));
 	FlexibleNode selected_nodeP = new FlexibleNode();
 	// set the attributes of newly added node.
 	selected_nodeP.setAttribute(this.internalnode_nidname, pid);
@@ -228,7 +230,12 @@ public class TIPars{
 
     }
 
-
+    public static double JC69(double p) {
+	double d = -3.0 * Math.log(1-4.0*p/3.0) / 4.0;
+	return d;
+    }
+    
+    
     // Note: the n1 and n2 nodes are on the same tree. Not yet tested.
     public static double[] calcDisBetweenTwoNodes(FlexibleTree t, FlexibleNode n1, FlexibleNode n2, double n1_dis, double n2_dis){
 	double node_dis = 0.0; // Number of node difference
