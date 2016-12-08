@@ -145,8 +145,16 @@ public class TIPars{
 	Taxon qtaxon = new Taxon(qname);
 	FlexibleNode selected_nodeQ = new FlexibleNode(qtaxon);
 	// Q-P pendent length
-	double p = selectedScores[2]/((double)getAlignmentLength());
-	selected_nodeQ.setLength(JC69(p));
+
+	// JC69
+	// double p = selectedScores[2]/((double)getAlignmentLength());
+	// double pqlen = JC69(p);
+
+	// K2P
+	double pqlen = K2P(nodePseq, nodeQseq);
+
+	selected_nodeQ.setLength(pqlen);
+
 	FlexibleNode selected_nodeP = new FlexibleNode();
 	// set the attributes of newly added node.
 	selected_nodeP.setAttribute(this.internalnode_nidname, pid);
@@ -234,8 +242,32 @@ public class TIPars{
 	double d = -3.0 * Math.log(1-4.0*p/3.0) / 4.0;
 	return d;
     }
-    
-    
+
+    public static double K2P(String nodePseq, String nodeQseq) {
+	int S = 0;
+	int V = 0;
+	int n = nodePseq.length();
+
+	for (int i=0; i<n; i++) {
+	    if (nodePseq.charAt(i) == 'A' && nodeQseq.charAt(i) == 'G') {
+		S++;
+	    } else if (nodePseq.charAt(i) == 'G' && nodeQseq.charAt(i) == 'A') {
+		S++;
+	    } else if (nodePseq.charAt(i) == 'C' && nodeQseq.charAt(i) == 'T') {
+		S++;
+	    } else if (nodePseq.charAt(i) == 'T' && nodeQseq.charAt(i) == 'C') {
+		S++;
+	    } else {
+		V++;
+	    }
+	}
+
+	double s = 1.0 * S / n;
+	double v = 1.0 * V / n;
+	double d = -1.0 * Math.log(1-2.0*s-v)/2 - 1.0 * Math.log(1-2.0*v)/4;
+	return d;
+    }
+
     // Note: the n1 and n2 nodes are on the same tree. Not yet tested.
     public static double[] calcDisBetweenTwoNodes(FlexibleTree t, FlexibleNode n1, FlexibleNode n2, double n1_dis, double n2_dis){
 	double node_dis = 0.0; // Number of node difference
