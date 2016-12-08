@@ -126,6 +126,9 @@ public class TIPars{
 			nodePseq = tmp_nodePseq;
 			selectedNodeBIndex = i;
 			selectedBnid = (String)nodeB.getAttribute(nidname);
+			if (selectedBnid == null) {
+			    selectedBnid = nodeB.getTaxon().getId();
+			}
 			selectedBatt = (String)nodeB.getAttribute(attname);
 		    }
 		}
