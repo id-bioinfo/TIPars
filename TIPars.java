@@ -262,9 +262,10 @@ public class TIPars{
 	    }
 	}
 
-	double s = 1.0 * S / n;
-	double v = 1.0 * V / n;
-	double d = -1.0 * Math.log(1-2.0*s-v)/2 - 1.0 * Math.log(1-2.0*v)/4;
+	double s = 1.0 * S / (1.0*n);
+	double v = 1.0 * V / (1.0*n);
+	double d = -1.0 * Math.log(1.0-2.0*s-v)/2.0 - 1.0 * Math.log(1.0-2.0*v)/4.0;
+	System.out.println(s + "\t" + v + "\t" + d);
 	return d;
     }
 
