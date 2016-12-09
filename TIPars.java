@@ -154,7 +154,10 @@ public class TIPars{
 	// double pqlen = JC69(p);
 
 	// K2P
-	double pqlen = K2P(nodePseq, nodeQseq);
+	// double pqlen = K2P(nodePseq, nodeQseq);
+
+	// local estimation
+	double pqlen = localEstimation(selectedScores, original_B);
 
 	selected_nodeQ.setLength(pqlen);
 
@@ -283,6 +286,12 @@ public class TIPars{
 	//System.out.println(s + "\t" + v + "\t" + d);
 	return d;
     }
+
+    public static double localEstimation(int[] scores, double ABbranch) {
+	double d = ABbranch * ((double) scores[2])/((double) (scores[0]+scores[1]));
+	return d;
+    }
+
 
     // Note: the n1 and n2 nodes are on the same tree. Not yet tested.
     public static double[] calcDisBetweenTwoNodes(FlexibleTree t, FlexibleNode n1, FlexibleNode n2, double n1_dis, double n2_dis){
