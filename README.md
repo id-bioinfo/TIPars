@@ -13,7 +13,7 @@ This is still undergoing development.
 # Authors
 
 
-Tommy Tsan-Yuk LAM and Guangchuang Yu
+Tommy Tsan-Yuk LAM and Guangchuang YU
 
 
 # Quick Usage
