@@ -31,14 +31,16 @@ public class TIPars{
     private HashMap <FlexibleNode, String> node2Sseq = null;
     private HashMap <String, String> name2seq = null;
     private FlexibleNodeBranch<FlexibleNode, Double> myBandBPbranch = new FlexibleNodeBranch<FlexibleNode, Double>(); // for evaluation
+    private String model;
     public TIPars(){
 
     }
 
-    public TIPars(SimpleAlignment taxaseq, SimpleAlignment ancseq, Tree mytree, String internalnode_nidname){
+    public TIPars(SimpleAlignment taxaseq, SimpleAlignment ancseq, Tree mytree, String internalnode_nidname, String model){
 	this.mytree = mytree;
 	this.taxaseq = taxaseq;
 	this.ancseq = ancseq;
+	this.model = model;
 	this.internalnode_nidname = internalnode_nidname;
 	setupHashtableOfNode2Seq();
     }
@@ -149,16 +151,18 @@ public class TIPars{
 	FlexibleNode selected_nodeQ = new FlexibleNode(qtaxon);
 	// Q-P pendent length
 
-	// JC69
-	// double p = selectedScores[2]/((double)getAlignmentLength());
-	// double pqlen = JC69(p);
-
-	// K2P
-	// double pqlen = K2P(nodePseq, nodeQseq);
-
-	// local estimation
-	double pqlen = localEstimation(selectedScores, original_B);
-
+	double pqlen;
+	if (model.equals("JC69")) {
+	    // JC69
+	    double p = selectedScores[2]/((double)getAlignmentLength());
+	    pqlen = JC69(p);
+	} else if (model.equals("K2P")) {
+	    // K2P
+	    pqlen = K2P(nodePseq, nodeQseq);
+	} else {
+	    // local estimation
+	    pqlen = localEstimation(selectedScores, original_B);
+	}
 	selected_nodeQ.setLength(pqlen);
 
 	FlexibleNode selected_nodeP = new FlexibleNode();
@@ -364,7 +368,6 @@ public class TIPars{
 	    else{ return new double[]{-1, -99}; } // -99 is dummy value
 	}
     }
-
 
 
     // Remove a taxon Q, and return "FlexibleNode B" AND "B-P br.length" as the below:
@@ -699,17 +702,19 @@ public class TIPars{
 	String intfn = "";
 	String inafn = "";
 	String inqfn = "";
+	String inm   = "";
 	String outfn = "";
 	//String outdisfn = "";
 	String nidname = "label";
 	String attname = "GenName";
 	boolean outdis = true;
 	try{
-	    if(!(args.length == 8 || args.length == 6)){
+	    if(!(args.length == 9 || args.length == 7)){
 		intfn = getShellInput("Enter your input nexus tree file: ");
 		insfn = getShellInput("Enter your input taxa seq file [fasta name is taxaname]: ");
 		inafn = getShellInput("Enter your input ancestral seq file [fasta name is nid]: ");
 		inqfn = getShellInput("Enter your input query seq file [fasta name is taxaname]: ");
+		inm   = getShellInput("Enter substitution model for estimating branch ['LE' (local estimation), 'JC69' or 'K2P']: ");
 		outfn = getShellInput("Enter your output nexus tree file: ");
 		String tempstr = getShellInput("Want to output ABQdis, Bnid and genotype info? (0=no|1=yes): ");
 		outdis = (tempstr.equals("0"))?false:true;
@@ -723,12 +728,13 @@ public class TIPars{
 		insfn = args[1];
 		inafn = args[2];
 		inqfn = args[3];
-		outfn = args[4];
-		String tempstr = args[5];
+		inm   = args[4];
+		outfn = args[5];
+		String tempstr = args[6];
 		outdis = (tempstr.equals("0"))?false:true;
 		if(outdis){
-		    nidname = args[6];
-		    attname = args[7];
+		    nidname = args[7];
+		    attname = args[8];
 		}
 
 	    }
@@ -750,7 +756,7 @@ public class TIPars{
 
 	    NewickImporter tni = new NewickImporter(new FileReader(intfn));
 	    Tree tree = tni.importTree(taxa_align);
-	    TIPars myAdd = new TIPars(taxa_align, anc_align, tree, nidname);
+	    TIPars myAdd = new TIPars(taxa_align, anc_align, tree, nidname, inm);
 
 	    Tree outtree = myAdd.addQuerySequence(query_align[0], query_align[1], "q1", "p1", outdis, nidname, attname, new double[3]); // q1 and p1 are the attributes of nodeQ and nodeP.
 	    PrintStream fw = new PrintStream(new FileOutputStream(new File(outfn)));
