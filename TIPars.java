@@ -480,15 +480,13 @@ public class TIPars{
     }
 
 
-    private int[] getSequenceComparisonPosition(String a, String b, String c) {
-	int[] position = new int[2];
+    private void getSequenceComparisonPosition(int[] position, String a, String b, String c) {
 	position[0] = 0;
-	position[1] = a.length();
+	position[1] = a.length()-1;
 
 	if (gap.equals("distinctive") || gap.equals("inner")) {
 	    endTrailingGap3(position, a, b, c);
 	}
-	return position;
     }
 
     private static void endTrailingGap3(int[] position, String a, String b, String c) {
@@ -529,8 +527,9 @@ public class TIPars{
 
 	StringBuilder p = new StringBuilder(c);
 
-	int[] position = getSequenceComparisonPosition(a, b, c);
-
+	int[] position = new int[2];
+	getSequenceComparisonPosition(position, a, b, c);
+	// System.out.println(a.length() + "\t" + position[0] + "\t" + position[1] + "\n");
 	boolean ingoreGap = false;
 	if (gap.equals("ignore")) {
 	    ingoreGap = true;
