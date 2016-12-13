@@ -536,7 +536,7 @@ public class TIPars{
 	    ingoreGap = true;
 	}
 
-	for(int i=position[0]; i<position[1]; i++){
+	for(int i=position[0]; i<=position[1]; i++){
 	    char ai = a.charAt(i);
 	    char bi = b.charAt(i);
 	    char ci = c.charAt(i);
