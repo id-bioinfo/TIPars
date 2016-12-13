@@ -24,6 +24,7 @@ Tommy Tsan-Yuk LAM and Guangchuang YU
          -a aligned_ancestral_sequence \
 		 -q query_sequence \
 		 -m model \
+		 -g gap \
 		 -o output_file
 ```
 

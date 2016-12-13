@@ -32,15 +32,17 @@ public class TIPars{
     private HashMap <String, String> name2seq = null;
     private FlexibleNodeBranch<FlexibleNode, Double> myBandBPbranch = new FlexibleNodeBranch<FlexibleNode, Double>(); // for evaluation
     private String model;
+    private String gap;
     public TIPars(){
 
     }
 
-    public TIPars(SimpleAlignment taxaseq, SimpleAlignment ancseq, Tree mytree, String internalnode_nidname, String model){
+    public TIPars(SimpleAlignment taxaseq, SimpleAlignment ancseq, Tree mytree, String internalnode_nidname, String model, String gap){
 	this.mytree = mytree;
 	this.taxaseq = taxaseq;
 	this.ancseq = ancseq;
 	this.model = model;
+	this.gap = gap;
 	this.internalnode_nidname = internalnode_nidname;
 	setupHashtableOfNode2Seq();
     }
@@ -477,6 +479,45 @@ public class TIPars{
 	return myBandBPbranch;
     }
 
+
+    private int[] getSequenceComparisonPosition(String a, String b, String c) {
+	int[] position = new int[2];
+	position[0] = 0;
+	position[1] = a.length();
+
+	if (gap.equals("distinctive") || gap.equals("inner")) {
+	    endTrailingGap3(position, a, b, c);
+	}
+	return position;
+    }
+
+    private static void endTrailingGap3(int[] position, String a, String b, String c) {
+	endTrailingGap(position, a);
+	endTrailingGap(position, b);
+	endTrailingGap(position, c);
+    }
+
+    private static void endTrailingGap(int[] pos, String a) {
+	int i=-1;
+	while (i < a.length()) {
+	    ++i;
+	    if (a.charAt(i) != '-') {
+		break;
+	    }
+	}
+	int j=a.length();
+	while (j >= 0) {
+	    --j;
+	    if (a.charAt(j) != '-') {
+		break;
+	    }
+	}
+	if (pos[0] < i)
+	    pos[0] = i;
+	if(pos[1] > j)
+	    pos[1] = j;
+    }
+
     public String getStringAndScoreFromNodeABQSeq(String a, String b, String c, Integer[] scores1){
 	int[] scores = new int[3]; scores[0] = 0; scores[1] = 0; scores[2] = 0;
 	a = a.toUpperCase();
@@ -487,70 +528,51 @@ public class TIPars{
 	boolean precedingGapB = true;
 
 	StringBuilder p = new StringBuilder(c);
-	for(int i=0; i<a.length(); i++){
+
+	int[] position = getSequenceComparisonPosition(a, b, c);
+
+	boolean ingoreGap = false;
+	if (gap.equals("ignore")) {
+	    ingoreGap = true;
+	}
+
+	for(int i=position[0]; i<position[1]; i++){
 	    char ai = a.charAt(i);
 	    char bi = b.charAt(i);
 	    char ci = c.charAt(i);
 	    if(ai == ci && ai == bi){
-		// p += ai;
+		continue;
 		// do nothing
 		//if(DEBUG) System.out.print("AAA");
-	    }
-	    else if(ai != ci && ci != bi && ai != bi){   // ATC
+	    } else if(ai != ci && ci != bi && ai != bi){   // ATC
 		//p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
 		p.setCharAt(i, ai);
 
-		// consider A-C
-		if (bi == '-') {
-		    if (!precedingGapB) {
-			scores[1]++;
-		    }
-		} else {
-		    if (precedingGapB) {
-			precedingGapB = false;
-		    }
-		    scores[1]++;
+		if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
+		    continue;
 		}
 
-		// consider AT-
-		if (ci == '-') {
-		    if (!precedingGapC) {
-			scores[2]++;
-		    }
-		} else {
-		    if (precedingGapC) {
-			precedingGapC = false;
-		    }
-		    scores[2]++;
-		}
-
-		// if asign ci
-		// scores[0]++;
-		// scores[1]++;
+		scores[1]++;
+		scores[2]++;
 
 		//if(DEBUG) System.out.print("ATC");
-	    }
-	    else if(ai == bi && ci != bi){   // AAT
+	    } else if(ai == bi && ci != bi){   // AAT
 		//p += ai;
 		p.setCharAt(i, ai);
 
-		// consider AA-
-		if (ci == '-') {
-		    if (!precedingGapC) {
-			scores[2]++;
-		    }
-		} else {
-		    if (precedingGapC) {
-			precedingGapC = false;
-		    }
-		    scores[2]++;
+		if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
+		    continue;
 		}
+		scores[2]++;
 
 		// if(DEBUG) System.out.print("AAT");
 	    }
 	    else if(ai != bi && ci == bi){   // ATT
 		//p += bi;
 		p.setCharAt(i, bi);
+		if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
+		    continue;
+		}
 		scores[0]++;
 		//if(DEBUG) System.out.print("ATT");
 	    }
@@ -558,17 +580,11 @@ public class TIPars{
 		// p += ai;
 		p.setCharAt(i, ai);
 
-		// consider T-T
-		if (bi == '-') {
-		    if (!precedingGapB) {
-			scores[1]++;
-		    }
-		} else {
-		    if (precedingGapB) {
-			precedingGapB = false;
-		    }
-		    scores[1]++;
+		if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
+		    continue;
 		}
+
+		scores[1]++;
 
 		//if(DEBUG) System.out.print("TAT");
 	    }
@@ -703,18 +719,20 @@ public class TIPars{
 	String inafn = "";
 	String inqfn = "";
 	String inm   = "";
+	String ing   = "";
 	String outfn = "";
 	//String outdisfn = "";
 	String nidname = "label";
 	String attname = "GenName";
 	boolean outdis = true;
 	try{
-	    if(!(args.length == 9 || args.length == 7)){
+	    if(!(args.length == 10 || args.length == 8)){
 		intfn = getShellInput("Enter your input nexus tree file: ");
 		insfn = getShellInput("Enter your input taxa seq file [fasta name is taxaname]: ");
 		inafn = getShellInput("Enter your input ancestral seq file [fasta name is nid]: ");
 		inqfn = getShellInput("Enter your input query seq file [fasta name is taxaname]: ");
-		inm   = getShellInput("Enter substitution model for estimating branch ['LE' (local estimation), 'JC69' or 'K2P']: ");
+		inm   = getShellInput("Enter substitution model for estimating branch ['LE', 'JC69' or 'K2P']: ");
+		ing   = getShellInput("Enter gap option ['ignore', 'inner' or 'all': ");
 		outfn = getShellInput("Enter your output nexus tree file: ");
 		String tempstr = getShellInput("Want to output ABQdis, Bnid and genotype info? (0=no|1=yes): ");
 		outdis = (tempstr.equals("0"))?false:true;
@@ -729,12 +747,13 @@ public class TIPars{
 		inafn = args[2];
 		inqfn = args[3];
 		inm   = args[4];
-		outfn = args[5];
-		String tempstr = args[6];
+		ing   = args[5];
+		outfn = args[6];
+		String tempstr = args[7];
 		outdis = (tempstr.equals("0"))?false:true;
 		if(outdis){
-		    nidname = args[7];
-		    attname = args[8];
+		    nidname = args[8];
+		    attname = args[9];
 		}
 
 	    }
@@ -756,7 +775,7 @@ public class TIPars{
 
 	    NewickImporter tni = new NewickImporter(new FileReader(intfn));
 	    Tree tree = tni.importTree(taxa_align);
-	    TIPars myAdd = new TIPars(taxa_align, anc_align, tree, nidname, inm);
+	    TIPars myAdd = new TIPars(taxa_align, anc_align, tree, nidname, inm, ing);
 
 	    Tree outtree = myAdd.addQuerySequence(query_align[0], query_align[1], "q1", "p1", outdis, nidname, attname, new double[3]); // q1 and p1 are the attributes of nodeQ and nodeP.
 	    PrintStream fw = new PrintStream(new FileOutputStream(new File(outfn)));
