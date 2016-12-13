@@ -10,6 +10,12 @@ by ours).
 
 This is still undergoing development.
 
+# Authors
+
+
+Tommy Tsan-Yuk LAM and Guangchuang Yu
+
+
 # Quick Usage
 
 ```bash
@@ -17,6 +23,7 @@ This is still undergoing development.
 	     -s aligned_taxa_sequence \
          -a aligned_ancestral_sequence \
 		 -q query_sequence \
+		 -m model \
 		 -o output_file
 ```
 

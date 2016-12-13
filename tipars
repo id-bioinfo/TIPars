@@ -20,10 +20,10 @@ opt <- parse_args(OptionParser(option_list=option_list))
 
 ## check parameters
 
-if (is.null(opt$tree)) stop("tree file must be provided...")
+if (is.null(opt$tree))     stop("tree file must be provided...")
 if (is.null(opt$sequence)) stop("aligned taxa sequence (fasta) file must be provided...")
-if (is.null(opt$ancseq)) stop("aligned ancestral sequence (fasta) file must be provided...")
-if (is.null(opt$query)) stop("query seqence (fasta) file must be provided...")
+if (is.null(opt$ancseq))   stop("aligned ancestral sequence (fasta) file must be provided...")
+if (is.null(opt$query))    stop("query seqence (fasta) file must be provided...")
 
 
 cmd_args <- commandArgs(trailingOnly = FALSE)
