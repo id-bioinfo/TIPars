@@ -731,7 +731,7 @@ public class TIPars{
 		inafn = getShellInput("Enter your input ancestral seq file [fasta name is nid]: ");
 		inqfn = getShellInput("Enter your input query seq file [fasta name is taxaname]: ");
 		inm   = getShellInput("Enter substitution model for estimating branch ['LE', 'JC69' or 'K2P']: ");
-		ing   = getShellInput("Enter gap option ['ignore', 'inner' or 'all': ");
+		ing   = getShellInput("Enter gap option ['ignore', 'inner' or 'all']: ");
 		outfn = getShellInput("Enter your output nexus tree file: ");
 		String tempstr = getShellInput("Want to output ABQdis, Bnid and genotype info? (0=no|1=yes): ");
 		outdis = (tempstr.equals("0"))?false:true;
