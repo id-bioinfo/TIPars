@@ -789,8 +789,8 @@ public class TIPars{
 	    fw.close();
 	    long endTime = System.currentTimeMillis();
 	    long totalTime = endTime - startTime;
-	    System.out.println("Insertion time elapse: " + (double) totalTime2/1000);
-	    System.out.println("Total time elapse: " + (double) totalTime/1000);
+	    System.out.println("Insertion time: " + (double) totalTime2/1000);
+	    System.out.println("Overall time: " + (double) totalTime/1000);
 	}
 	catch(Exception e){
 	    e.printStackTrace();
