@@ -35,7 +35,8 @@ exec_dir <- dirname(exec_script)
 TIPars <- paste0("java -jar ", exec_dir, "/", "TIPars.jar")
 cmd <- paste(TIPars, opt$tree, opt$sequence, opt$ancseq, opt$query, opt$model, opt$gap, opt$output, "0")
 
-cat("\n\n", format(Sys.time(), "%Y-%m-%d %X"), "\n")
+cat("\n\n")
+cat(format(Sys.time(), "%Y-%m-%d %X"), "\n")
 cat(cmd, "\n")
 system(cmd)
 
