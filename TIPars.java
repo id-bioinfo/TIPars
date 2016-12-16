@@ -713,6 +713,8 @@ public class TIPars{
 
     public static void main(String[] args)
     {
+	long startTime = System.currentTimeMillis();
+
 	String insfn = "";
 	String intfn = "";
 	String inafn = "";
@@ -776,11 +778,19 @@ public class TIPars{
 	    Tree tree = tni.importTree(taxa_align);
 	    TIPars myAdd = new TIPars(taxa_align, anc_align, tree, nidname, inm, ing);
 
+	    long startTime2 = System.currentTimeMillis();
 	    Tree outtree = myAdd.addQuerySequence(query_align[0], query_align[1], "q1", "p1", outdis, nidname, attname, new double[3]); // q1 and p1 are the attributes of nodeQ and nodeP.
+	    long endTime2 = System.currentTimeMillis();
+	    long totalTime2 = endTime2 - startTime2;
+
 	    PrintStream fw = new PrintStream(new FileOutputStream(new File(outfn)));
 	    NexusExporter kne = new NexusExporter(fw); // export the tree *with attributes* to the output nexus file.
 	    kne.exportTree(outtree);
 	    fw.close();
+	    long endTime = System.currentTimeMillis();
+	    long totalTime = endTime - startTime;
+	    System.out.println("Insertion time elapse: " + (double) totalTime2/1000);
+	    System.out.println("Total time elapse: " + (double) totalTime/1000);
 	}
 	catch(Exception e){
 	    e.printStackTrace();
