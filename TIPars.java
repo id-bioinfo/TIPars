@@ -644,6 +644,16 @@ public class TIPars{
 	return sa;
     }
 
+    public static String[] readQueryFastaAlignmentFile(String fn) {
+	SimpleAlignment sa = readFastaAlignmentFile(fn);
+	String[] res = new String[2];
+	res[0] = sa.getTaxonId(0);
+	res[1] = sa.getAlignedSequenceString(0);
+	return res;
+    }
+
+
+    /*
     public static SimpleAlignment readSingleLineFastaAlignmentFile(String fn){
 	/////////// Read the sequence/state file (expect fasta format)
 	SimpleAlignment sa = null;
@@ -676,15 +686,6 @@ public class TIPars{
 	return sa;
     }
 
-    public static String[] readQueryFastaAlignmentFile(String fn) {
-	SimpleAlignment sa = readFastaAlignmentFile(fn);
-	String[] res = new String[2];
-	res[0] = sa.getTaxonId(0);
-	res[1] = sa.getAlignedSequenceString(0);
-	return res;
-    }
-
-
     // Read query fasta, only read one entry.
     public static String[] readSingleLineQueryFastaAlignmentFile(String fn){
 	/////////// Read the sequence/state file (expect fasta format)
@@ -709,7 +710,7 @@ public class TIPars{
 	}
 	return sa;
     }
-
+    */
 
     public static void main(String[] args)
     {
