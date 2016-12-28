@@ -8,13 +8,13 @@ if (is.null(tryCatch(packageVersion("optparse"), error=function(e) NULL))) {
 suppressPackageStartupMessages(library("optparse"))
 
 option_list <- list(
-    make_option(c("-t", "--tree"), help="tree file, in newick format"),
+    make_option(c("-t", "--tree"), help="tree file, in Newick format"),
     make_option(c("-s", "--sequence"), help="fasta file contains aligned taxa sequences"),
     make_option(c("-a", "--ancseq"), help="fasta file contains aligned ancestral sequences"),
     make_option(c("-q", "--query"), help="fasta file contains 1 query seqence"),
     make_option(c("-m", "--model"), default="LE", help="one of 'LE' (by default), 'JC69' or 'K2P'"),
     make_option(c("-g", "--gap"), default="ignore", help="one of 'ignore', 'inner' or 'all'"),
-    make_option(c("-o", "--output"), default="TIPars_output.nex", help="output NEXUS file name")
+    make_option(c("-o", "--output"), default="TIPars_output.tree", help="output Newick file name")
     )
 
 opt <- parse_args(OptionParser(option_list=option_list))

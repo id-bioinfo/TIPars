@@ -1,6 +1,7 @@
 import dr.evolution.sequence.Sequence;
 import dr.evolution.alignment.SimpleAlignment;
 import dr.evolution.tree.FlexibleNode;
+import dr.evolution.tree.NodeRef;
 import dr.evolution.parsimony.FitchParsimony;
 import dr.evolution.tree.Tree;
 import dr.evolution.tree.FlexibleTree;
@@ -302,6 +303,7 @@ public class TIPars{
     }
 
 
+    /*
     // Note: the n1 and n2 nodes are on the same tree. Not yet tested.
     public static double[] calcDisBetweenTwoNodes(FlexibleTree t, FlexibleNode n1, FlexibleNode n2, double n1_dis, double n2_dis){
 	double node_dis = 0.0; // Number of node difference
@@ -341,7 +343,7 @@ public class TIPars{
 	}
 	return new double[]{dis, node_dis};
     }
-
+    */
 
 
     // If not found return -1, -99, else return branch length & number of node distance
@@ -784,10 +786,8 @@ public class TIPars{
 	    long endTime2 = System.currentTimeMillis();
 	    long totalTime2 = endTime2 - startTime2;
 
-	    PrintStream fw = new PrintStream(new FileOutputStream(new File(outfn)));
-	    NexusExporter kne = new NexusExporter(fw); // export the tree *with attributes* to the output nexus file.
-	    kne.exportTree(outtree);
-	    fw.close();
+	    toNewick(outtree, outfn);
+
 	    long endTime = System.currentTimeMillis();
 	    long totalTime = endTime - startTime;
 	    System.out.println("Insertion time: " + (double) totalTime2/1000);
@@ -799,6 +799,53 @@ public class TIPars{
     }
 
 
+    public static void toNewick(Tree tree, String fn) {
+	try{
+	    StringBuilder buffer = new StringBuilder();
+	    toNewick(tree, (FlexibleNode) tree.getRoot(), buffer);
+	    buffer.append(';');
+
+	    PrintStream out = new PrintStream(new FileOutputStream(new File(fn)));
+	    out.println(buffer.toString());
+	    out.close();
+	}
+	catch(Exception e){
+	    e.printStackTrace();
+	}
+    }
+
+    public static void toNewick(Tree tree, FlexibleNode node, StringBuilder buffer) {
+	if (tree.isExternal(node)) {
+	    String label = tree.getTaxonId(node.getNumber());
+	    buffer.append(label);
+	    appendLength(tree, node, buffer);
+	} else {
+	    buffer.append('(');
+	    int n = tree.getChildCount(node);
+	    for (int i=0; i<n; i++) {
+		toNewick(tree, (FlexibleNode) tree.getChild(node, i), buffer);
+		if (i == (n-1)) {
+		    buffer.append(')');
+		    String label = (String) node.getAttribute("label");
+		    if (label != null)
+		    	buffer.append(label);
+		} else {
+		    buffer.append(',');
+		}
+	    }
+	    FlexibleNode parentNode = (FlexibleNode) tree.getParent(node);
+	    if (parentNode != null) {
+		appendLength(tree, node, buffer);
+	    }
+	}
+    }
+
+    private static void appendLength(Tree tree, FlexibleNode node, StringBuilder buffer) {
+	if (tree.hasBranchLengths()) {
+	    buffer.append(':');
+	    buffer.append(tree.getBranchLength(node));
+	}
+    }
 
 
     public static void writeNexusTree(Tree t, String fn){
