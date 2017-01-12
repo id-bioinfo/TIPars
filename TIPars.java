@@ -35,7 +35,7 @@ public class TIPars{
     private String model;
     private String gap;
     public TIPars(){
-
+	
     }
 
     public TIPars(SimpleAlignment taxaseq, SimpleAlignment ancseq, Tree mytree, String internalnode_nidname, String model, String gap){
@@ -296,7 +296,7 @@ public class TIPars{
 
     public static double localEstimation(int[] scores, double ABbranch) {
 	if (scores[0] + scores[1] == 0) {
-	    return ABbranch/3.0;
+	    return 0;
 	}
 	double d = ABbranch * ((double) scores[2])/((double) (scores[0]+scores[1]));
 	return d;
