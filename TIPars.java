@@ -265,7 +265,7 @@ public class TIPars{
             if (nodelabel == null) {
                 nodelabel = String.valueOf(selectedNodeBIndex);
             }
-            String placeInfo = "\t{\"p\":[" + node2edge.get(Bnode) + ", " + afterscores[0]  + ", " + afterscores[2] +  "]," + "\"n\":[" + nodelabel + "\"]}";
+            String placeInfo = "\t{\"p\":[" + node2edge.get(Bnode) + ", " + afterscores[0]  + ", " + afterscores[2] +  "]," + "\"n\":[\"" + nodelabel + "\"]}";
             placements[ii] = placeInfo;
             if (otype.equals("placement")) {
                 return mytree;
@@ -874,12 +874,13 @@ public class TIPars{
                 for (int i=0; i<placements.length; i++) {
                     buffer.append(placements[i]);
                     if (i == placements.length -1) {
-                        buffer.append("\n\t],");
+                        buffer.append("\n\t],\n");
                     } else {
                         buffer.append(",\n");
                     }
                 }
-                buffer.append("\t\"metadata\": {\"info\": placement using TIPars\"},\n");
+                buffer.append("\t\"metadata\": {\"info\": \"placement using TIPars\"},\n");
+                buffer.append("\t\"version\": 201703,\n");
                 buffer.append("\t\"fields\": [\"edge_num\", \"distal_length\", \"pendant_length\"\n\t]\n}\n");
             }
 
