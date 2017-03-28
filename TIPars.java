@@ -259,11 +259,15 @@ public class TIPars{
         System.out.println("distal_length: " + afterscores[0]);
         System.out.println("pendant_length: " + afterscores[2] + "\n");
 
+
         if (otype.equals("placement")) {
+            String nodelabel = String.valueOf(selectedNodeBIndex);
+
             FlexibleNode Bnode = (FlexibleNode) mytree.getNode(selectedNodeBIndex);
-            String nodelabel = "" + Bnode.getAttribute(internalnode_nidname);
-            if (nodelabel == null) {
-                nodelabel = String.valueOf(selectedNodeBIndex);
+            if (mytree.isExternal(Bnode)) {
+                nodelabel = mytree.getTaxonId(Bnode.getNumber());
+            } else {
+                nodelabel = "" + Bnode.getAttribute(internalnode_nidname);
             }
             String placeInfo = "\t{\"p\":[" + node2edge.get(Bnode) + ", " + afterscores[0]  + ", " + afterscores[2] +  "]," + "\"n\":[\"" + nodelabel + "\"]}";
             placements[ii] = placeInfo;
