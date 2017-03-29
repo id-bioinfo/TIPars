@@ -261,7 +261,7 @@ public class TIPars{
 
 
         if (otype.equals("placement")) {
-            String placeInfo = "\t{\"p\":[" + node2edge.get((FlexibleNode) mytree.getNode(selectedNodeBIndex)) + ", " + afterscores[0]  + ", " + afterscores[2] +  "]," + "\"n\":[\"" + qid + "\"]}";
+            String placeInfo = "\t{\"p\":[" + node2edge.get((FlexibleNode) mytree.getNode(selectedNodeBIndex)) + ", " + afterscores[0]  + ", " + afterscores[2] +  "]," + "\"n\":[\"" + qname + "\"]}";
             placements[ii] = placeInfo;
             if (otype.equals("placement")) {
                 return mytree;
@@ -834,8 +834,9 @@ public class TIPars{
                     String[] tmp_query = new String[2];
                     tmp_query[0] = query_align.getTaxonId(i);
                     tmp_query[1] = query_align.getAlignedSequenceString(i);
-
-                    outtree = myAdd.addQuerySequence(tmp_query[0], tmp_query[1], "q1", "p1", outdis, nidname, attname, new double[3], otype, i);
+                    String qid = "q" + i;
+                    String pid = "p" + i;
+                    outtree = myAdd.addQuerySequence(tmp_query[0], tmp_query[1], qid, pid, outdis, nidname, attname, new double[3], otype, i);
                 }
 
             }
