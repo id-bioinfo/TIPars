@@ -1,11 +1,12 @@
 import dr.evolution.sequence.Sequence;
+import dr.app.tools.NexusExporter;
 import dr.evolution.alignment.SimpleAlignment;
+import dr.evolution.alignment.SitePatterns;
 import dr.evolution.tree.FlexibleNode;
 import dr.evolution.tree.NodeRef;
 import dr.evolution.parsimony.FitchParsimony;
 import dr.evolution.tree.Tree;
 import dr.evolution.tree.FlexibleTree;
-import dr.app.tools.NexusExporter;
 import dr.evolution.io.NexusImporter;
 import dr.evolution.io.NewickImporter;
 import dr.evolution.io.FastaImporter;
@@ -18,11 +19,11 @@ import dr.stats.DiscreteStatistics;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Iterator;
-import dr.evolution.alignment.SitePatterns;
+
 
 // Author: Tommy Tsan-Yuk LAM, Guangchuang YU
 // Description: Insert taxa into a reference phylogeny by parsimony.
-// last update 2017-03-27
+// last update 2017-08-21
 
 public class TIPars{
     private boolean DEBUG = false;
@@ -80,16 +81,18 @@ public class TIPars{
             //System.out.println(t);
             if(t >= 0){
                 node2Sseq.put(n, ancseq.getAlignedSequenceString(t));
+            } else if(DEBUG){
+                System.out.println("inode-attribute="+(String)(n.getAttribute(this.internalnode_nidname))+" not found in alignment.");
             }
-            else if(DEBUG){ System.out.println("inode-attribute="+(String)(n.getAttribute(this.internalnode_nidname))+" not found in alignment."); }
         }
         for(int i=0; i<mytree.getExternalNodeCount(); i++){
             FlexibleNode n = (FlexibleNode)mytree.getExternalNode(i);
             int t = taxaseq.getTaxonIndex(n.getTaxon().getId());
             if(t >= 0){
                 node2Sseq.put(n, taxaseq.getAlignedSequenceString(t));
+            } else if(DEBUG){
+                System.out.println("enode-taxa="+n.getTaxon().getId()+" not found in alignment.");
             }
-            else if(DEBUG){ System.out.println("enode-taxa="+n.getTaxon().getId()+" not found in alignment."); }
         }
     }
 
@@ -100,9 +103,9 @@ public class TIPars{
     public Tree addQuerySequence(String qname, String nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
                                  String nidname, String attname, double[] ABQ_brlen, String otype, int ii){
         // Travel all internal nodes for all possible nodeA-nodeB pairs
-        //HashMap <FlexibleNode, int[]> nodeB2score = new HashMap<FlexibleNode, int[]>();
+        // HashMap <FlexibleNode, int[]> nodeB2score = new HashMap<FlexibleNode, int[]>();
         // map the *nodeB* to the score array (nodeA score, nodeB score, nodeQ score)
-        //HashMap <FlexibleNode, String> nodeB2nodePseq = new HashMap<FlexibleNode, String>();
+        // HashMap <FlexibleNode, String> nodeB2nodePseq = new HashMap<FlexibleNode, String>();
         // map the *nodeB* to the nodeP sequence
         String nodePseq = "";
         int[] selectedScores = new int[3];
@@ -115,8 +118,8 @@ public class TIPars{
             //    nodeA
             //       |
             //     nodeP
-            //       |                          \
-            //       |                          \
+            //       | \
+            //       |  \
             //    nodeB nodeQ
 
             FlexibleNode nodeB = (FlexibleNode)mytree.getNode(i);
@@ -126,7 +129,7 @@ public class TIPars{
                 FlexibleNode nodeA = (FlexibleNode)nodeB.getParent();
                 /////////// IMPORTANT NOTE: Ignore the case when nodeA is root first.
                 ///////////                 Reason: 1) BEAST cannot intake root attribute; 2) HYPHY will not reconstruct root anc seq.
-                ///////////                 My be try to solve this problem later.
+                ///////////                 May be try to solve this problem later.
                 ////////////////////////////////////////////////////
 
                 // actually BEAST can parse root attribute
@@ -141,11 +144,9 @@ public class TIPars{
                 int[] scores = new int[3];
                 if(nodeAseq == null){
                     if(DEBUG){ System.out.println("nodeAseq cannot find seq - "+nodeA.getAttribute(this.internalnode_nidname)); }
-                }
-                else if(nodeBseq == null){
+                } else if(nodeBseq == null){
                     if(DEBUG){ System.out.println("nodeBseq cannot find seq - "+nodeB.getAttribute(this.internalnode_nidname)); }
-                }
-                else{
+                } else{
                     Integer[] scores1 = new Integer[3];
                     String tmp_nodePseq = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, scores1);
                     scores[0] = scores1[0].intValue();
@@ -207,8 +208,7 @@ public class TIPars{
             afterscores[0] = 0.0;
             afterscores[1] = selected_nodeB.getLength();
             afterscores[2] = selected_nodeQ.getLength();
-        }
-        else if(selectedScores[1] == 0){  // P-B is zero branch length, meaning that Q is inserted into B directly.
+        } else if(selectedScores[1] == 0){  // P-B is zero branch length, meaning that Q is inserted into B directly.
             if(selected_nodeB.isExternal()){ // If B is leaf, cannot add the Q directly there, must add P node.
                 double newNodeBLength = 0.0;
                 double newNodePLength = selected_nodeB.getLength();
@@ -218,15 +218,13 @@ public class TIPars{
                 selected_nodeA.removeChild(selected_nodeB);
                 selected_nodeA.addChild(selected_nodeP);
                 selected_nodeP.addChild(selected_nodeB);
-            }
-            else{
+            } else{
                 selected_nodeB.addChild(selected_nodeQ);
             }
             afterscores[0] = selected_nodeB.getLength();
             afterscores[1] = 0.0;
             afterscores[2] = selected_nodeQ.getLength();
-        }
-        else{
+        } else{
             double Pratio = selectedScores[0]/((double)(selectedScores[0]+selectedScores[1]));
             double newNodeBLength = selected_nodeB.getLength()*(1.0-Pratio);
             double newNodePLength = selected_nodeB.getLength()*Pratio;
@@ -244,7 +242,8 @@ public class TIPars{
         ABQ_brlen[1] = afterscores[1];
         ABQ_brlen[2] = afterscores[2];
 
-        if (DEBUG) System.out.println("ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2] + "\t" + selectedScores[2]*(ABQ_brlen[0]+ABQ_brlen[1])/(selectedScores[0]+selectedScores[1]));
+        if (DEBUG)
+            System.out.println("ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2] + "\t" + selectedScores[2]*(ABQ_brlen[0]+ABQ_brlen[1])/(selectedScores[0]+selectedScores[1]));
 
         myBandBPbranch = new FlexibleNodeBranch<FlexibleNode, Double>((FlexibleNode)(mytree.getNode(selectedNodeBIndex)), new Double(afterscores[1])); // For EVALUATION
         // myBandBPbranch.setNode(myTree.getNode(selectedNodeBIndex)); // For EVALUATION - must take the original tree node.
@@ -252,7 +251,8 @@ public class TIPars{
 
         // System.out.println(node2edge.get((FlexibleNode)(mytree.getNode(selectedNodeBIndex))));
 
-        if(printDisInfoOnScreen) System.out.println(""+selectedScores[0]+"\t"+selectedScores[1]+"\t"+original_B+"\t"+selectedScores[2]+"\t"+afterscores[0]+"\t"+afterscores[1]+"\t"+afterscores[2]+"\t"+selectedBnid+"\t"+selectedBatt+"\n");
+        if(printDisInfoOnScreen)
+            System.out.println(""+selectedScores[0]+"\t"+selectedScores[1]+"\t"+original_B+"\t"+selectedScores[2]+"\t"+afterscores[0]+"\t"+afterscores[1]+"\t"+afterscores[2]+"\t"+selectedBnid+"\t"+selectedBatt+"\n");
 
         System.out.println("\nquery sequence: " + qname);
         System.out.println("insert to edge: " + selectedBnid + "-" + (String)selected_nodeA.getAttribute(nidname));
@@ -272,6 +272,8 @@ public class TIPars{
         if(DEBUG) System.out.println("TaxonCount: "+mynewTree.getTaxonCount());
         mynewTree.toAdoptNodes((FlexibleNode)mynewTree.getRoot());
         if(DEBUG) System.out.println("TaxonCount after taxalist refresh: "+mynewTree.getTaxonCount());
+        node2Sseq.put(selected_nodeP, nodePseq);
+        node2Sseq.put(selected_nodeQ, nodeQseq);
         return mynewTree;
     }
 
@@ -290,54 +292,54 @@ public class TIPars{
     }
 
     public static double JC69(double p) {
-	double d = -3.0 * Math.log(1-4.0*p/3.0) / 4.0;
-	return d;
+        double d = -3.0 * Math.log(1-4.0*p/3.0) / 4.0;
+        return d;
     }
 
     public static double K2P(String nodePseq, String nodeQseq) {
-	int S = 0;
-	int V = 0;
-	int n = nodePseq.length();
+        int S = 0;
+        int V = 0;
+        int n = nodePseq.length();
 
-	boolean precedingGapQ = true;
+        boolean precedingGapQ = true;
 
-	for (int i=0; i<n; i++) {
-	    if (nodeQseq.charAt(i) != '-') {
-		precedingGapQ = false;
-	    }
+        for (int i=0; i<n; i++) {
+            if (nodeQseq.charAt(i) != '-') {
+                precedingGapQ = false;
+            }
 
-	    if (precedingGapQ && nodeQseq.charAt(i) == '-') {
-		    continue;
-	    }
+            if (precedingGapQ && nodeQseq.charAt(i) == '-') {
+                continue;
+            }
 
-	    if (nodePseq.charAt(i) == nodeQseq.charAt(i)) {
-		continue;
-	    } else if (nodePseq.charAt(i) == 'A' && nodeQseq.charAt(i) == 'G') {
-		S++;
-	    } else if (nodePseq.charAt(i) == 'G' && nodeQseq.charAt(i) == 'A') {
-		S++;
-	    } else if (nodePseq.charAt(i) == 'C' && nodeQseq.charAt(i) == 'T') {
-		S++;
-	    } else if (nodePseq.charAt(i) == 'T' && nodeQseq.charAt(i) == 'C') {
-		S++;
-	    } else {
-		V++;
-	    }
-	}
+            if (nodePseq.charAt(i) == nodeQseq.charAt(i)) {
+                continue;
+            } else if (nodePseq.charAt(i) == 'A' && nodeQseq.charAt(i) == 'G') {
+                S++;
+            } else if (nodePseq.charAt(i) == 'G' && nodeQseq.charAt(i) == 'A') {
+                S++;
+            } else if (nodePseq.charAt(i) == 'C' && nodeQseq.charAt(i) == 'T') {
+                S++;
+            } else if (nodePseq.charAt(i) == 'T' && nodeQseq.charAt(i) == 'C') {
+                S++;
+            } else {
+                V++;
+            }
+        }
 
-	double s = 1.0 * S / (1.0*n);
-	double v = 1.0 * V / (1.0*n);
-	double d = -1.0 * Math.log(1.0-2.0*s-v)/2.0 - 1.0 * Math.log(1.0-2.0*v)/4.0;
-	//System.out.println(s + "\t" + v + "\t" + d);
-	return d;
+        double s = 1.0 * S / (1.0*n);
+        double v = 1.0 * V / (1.0*n);
+        double d = -1.0 * Math.log(1.0-2.0*s-v)/2.0 - 1.0 * Math.log(1.0-2.0*v)/4.0;
+        //System.out.println(s + "\t" + v + "\t" + d);
+        return d;
     }
 
     public static double localEstimation(int[] scores, double ABbranch) {
-	if (scores[0] + scores[1] == 0) {
-	    return 0;
-	}
-	double d = ABbranch * ((double) scores[2])/((double) (scores[0]+scores[1]));
-	return d;
+        if (scores[0] + scores[1] == 0) {
+            return 0;
+        }
+        double d = ABbranch * ((double) scores[2])/((double) (scores[0]+scores[1]));
+        return d;
     }
 
 
@@ -421,66 +423,65 @@ public class TIPars{
     //     Q  B
     // Note the removal will be effective to the input tree object
     public static FlexibleNodeBranch<FlexibleNode, Double> removeTaxon(FlexibleTree t, FlexibleNode n){
-	try{
-	    t.beginTreeEdit();
-	    FlexibleNode p = n.getParent();
-	    p.removeChild(n);
-	    n.setParent(null);
-	    if(p.getChildCount() == 1){ // Remove this p node if if has less than 2 child nodes
-		FlexibleNode b = (FlexibleNode)(p.getChild(0));
-		FlexibleNode a = (FlexibleNode)(p.getParent());
-		a.addChild(b);
-		a.removeChild(p);
-		b.setParent(a);
-		double oldb2p = b.getLength();
-		b.setLength(b.getLength()+p.getLength());
-		p.setParent(null);
-		t.endTreeEdit();
-		return new TIPars().new FlexibleNodeBranch<FlexibleNode, Double>(b, new Double(oldb2p));
-	    }
-	    else{
-		t.endTreeEdit();
-		return new TIPars().new FlexibleNodeBranch<FlexibleNode, Double>(p, new Double(0.0));
-	    }
-	}
-	catch(Exception e){
-	    e.printStackTrace();
-	    return null;
-	}
+        try{
+            t.beginTreeEdit();
+            FlexibleNode p = n.getParent();
+            p.removeChild(n);
+            n.setParent(null);
+            if(p.getChildCount() == 1){ // Remove this p node if if has less than 2 child nodes
+                FlexibleNode b = (FlexibleNode)(p.getChild(0));
+                FlexibleNode a = (FlexibleNode)(p.getParent());
+                a.addChild(b);
+                a.removeChild(p);
+                b.setParent(a);
+                double oldb2p = b.getLength();
+                b.setLength(b.getLength()+p.getLength());
+                p.setParent(null);
+                t.endTreeEdit();
+                return new TIPars().new FlexibleNodeBranch<FlexibleNode, Double>(b, new Double(oldb2p));
+            }
+            else{
+                t.endTreeEdit();
+                return new TIPars().new FlexibleNodeBranch<FlexibleNode, Double>(p, new Double(0.0));
+            }
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            return null;
+        }
     }
 
     // copy attribute from n to m
     private void copyAttributeFromOneNodeToAnother(FlexibleNode n, FlexibleNode m){
-	Iterator attnames = n.getAttributeNames();
-	while(attnames != null && attnames.hasNext()){
-	    String ahname = (String)attnames.next();
-	    m.setAttribute(ahname,  n.getAttribute(ahname));
-	}
+        Iterator attnames = n.getAttributeNames();
+        while(attnames != null && attnames.hasNext()){
+            String ahname = (String)attnames.next();
+            m.setAttribute(ahname,  n.getAttribute(ahname));
+        }
     }
 
     private String getSequenceByNode(FlexibleNode a){
-	String seq = node2Sseq.get(a);
-	return seq;
+        String seq = node2Sseq.get(a);
+        return seq;
     }
 
     // Clean the "i102" problem in attribute whose value is String type. I have mentioned this in email.
     public static Tree cleanStringAttributeInTree(Tree t){
-	for(int i=0; i<t.getNodeCount(); i++){
-	    FlexibleNode nr = (FlexibleNode)t.getNode(i);
-	    Iterator attnames = nr.getAttributeNames();
-	    while(attnames != null && attnames.hasNext()){
-		String ahname = (String)attnames.next();
-		if(nr.getAttribute(ahname) instanceof String){
-		    String v = (String)nr.getAttribute(ahname);
-		    v = v.replaceAll("\"", "");
-		    nr.setAttribute(ahname,  v);
-		}
-		else{
-		    nr.setAttribute(ahname,  nr.getAttribute(ahname));
-		}
-	    }
-	}
-	return t;
+        for(int i=0; i<t.getNodeCount(); i++){
+            FlexibleNode nr = (FlexibleNode)t.getNode(i);
+            Iterator attnames = nr.getAttributeNames();
+            while(attnames != null && attnames.hasNext()){
+                String ahname = (String)attnames.next();
+                if(nr.getAttribute(ahname) instanceof String){
+                    String v = (String)nr.getAttribute(ahname);
+                    v = v.replaceAll("\"", "");
+                    nr.setAttribute(ahname,  v);
+                } else{
+                    nr.setAttribute(ahname,  nr.getAttribute(ahname));
+                }
+            }
+        }
+        return t;
     }
 
     // Suppose to contain the "FlexibleNode B" AND "B-P br.length" as the below:
@@ -491,206 +492,206 @@ public class TIPars{
     //      / |
     //     Q  B
     public class FlexibleNodeBranch<FlexibleNode,Double> {
-	public FlexibleNode a;
-	public Double b;
-	public FlexibleNodeBranch(FlexibleNode a, Double b) {
-	    this.a = a;
-	    this.b = b;
-	}
-	public FlexibleNodeBranch() {
-	    this.a = null;
-	    this.b = null;
-	}
-	public void setNode(FlexibleNode a2){
-	    this.a = a2;
-	}
-	public void setBrlen(Double b2){
-	    this.b = b2;
-	}
-	public FlexibleNode getNode(){
-	    return this.a;
-	}
-	public Double getBrlen(){
-	    return this.b;
-	}
+        public FlexibleNode a;
+        public Double b;
+        public FlexibleNodeBranch(FlexibleNode a, Double b) {
+            this.a = a;
+            this.b = b;
+        }
+        public FlexibleNodeBranch() {
+            this.a = null;
+            this.b = null;
+        }
+        public void setNode(FlexibleNode a2){
+            this.a = a2;
+        }
+        public void setBrlen(Double b2){
+            this.b = b2;
+        }
+        public FlexibleNode getNode(){
+            return this.a;
+        }
+        public Double getBrlen(){
+            return this.b;
+        }
     }
 
     public FlexibleNodeBranch<FlexibleNode, Double> getNodeBandBPbrlen(){
-	return myBandBPbranch;
+        return myBandBPbranch;
     }
 
 
     private void getSequenceComparisonPosition(int[] position, String a, String b, String c) {
-	position[0] = 0;
-	position[1] = a.length()-1;
+        position[0] = 0;
+        position[1] = a.length()-1;
 
-	if (gap.equals("distinctive") || gap.equals("inner")) {
-	    endTrailingGap3(position, a, b, c);
-	}
+        if (gap.equals("distinctive") || gap.equals("inner")) {
+            endTrailingGap3(position, a, b, c);
+        }
     }
 
     private static void endTrailingGap3(int[] position, String a, String b, String c) {
-	endTrailingGap(position, a);
-	endTrailingGap(position, b);
-	endTrailingGap(position, c);
+        endTrailingGap(position, a);
+        endTrailingGap(position, b);
+        endTrailingGap(position, c);
     }
 
     private static void endTrailingGap(int[] pos, String a) {
-	int i=-1;
-	while (i < a.length()) {
-	    ++i;
-	    if (a.charAt(i) != '-') {
-		break;
-	    }
-	}
-	int j=a.length();
-	while (j >= 0) {
-	    --j;
-	    if (a.charAt(j) != '-') {
-		break;
-	    }
-	}
-	if (pos[0] < i)
-	    pos[0] = i;
-	if(pos[1] > j)
-	    pos[1] = j;
+        int i=-1;
+        while (i < a.length()) {
+            ++i;
+            if (a.charAt(i) != '-') {
+                break;
+            }
+        }
+        int j=a.length();
+        while (j >= 0) {
+            --j;
+            if (a.charAt(j) != '-') {
+                break;
+            }
+        }
+        if (pos[0] < i)
+            pos[0] = i;
+        if(pos[1] > j)
+            pos[1] = j;
     }
 
     public String getStringAndScoreFromNodeABQSeq(String a, String b, String c, Integer[] scores1){
-	int[] scores = new int[3]; scores[0] = 0; scores[1] = 0; scores[2] = 0;
-	a = a.toUpperCase();
-	b = b.toUpperCase();
-	c = c.toUpperCase(); // c is Q
-	// String p = "";
-	boolean precedingGapC = true;
-	boolean precedingGapB = true;
+        int[] scores = new int[3]; scores[0] = 0; scores[1] = 0; scores[2] = 0;
+        a = a.toUpperCase();
+        b = b.toUpperCase();
+        c = c.toUpperCase(); // c is Q
+        // String p = "";
+        boolean precedingGapC = true;
+        boolean precedingGapB = true;
 
-	StringBuilder p = new StringBuilder(c);
+        StringBuilder p = new StringBuilder(c);
 
-	int[] position = new int[2];
-	getSequenceComparisonPosition(position, a, b, c);
-	// System.out.println(a.length() + "\t" + position[0] + "\t" + position[1] + "\n");
-	boolean ingoreGap = false;
-	if (gap.equals("ignore")) {
-	    ingoreGap = true;
-	}
+        int[] position = new int[2];
+        getSequenceComparisonPosition(position, a, b, c);
+        // System.out.println(a.length() + "\t" + position[0] + "\t" + position[1] + "\n");
+        boolean ingoreGap = false;
+        if (gap.equals("ignore")) {
+            ingoreGap = true;
+        }
 
-	for(int i=position[0]; i<=position[1]; i++){
-	    char ai = a.charAt(i);
-	    char bi = b.charAt(i);
-	    char ci = c.charAt(i);
-	    if(ai == ci && ai == bi){
-		continue;
-		// do nothing
-		//if(DEBUG) System.out.print("AAA");
-	    } else if(ai != ci && ci != bi && ai != bi){   // ATC
-		//p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
-		p.setCharAt(i, ai);
+        for(int i=position[0]; i<=position[1]; i++){
+            char ai = a.charAt(i);
+            char bi = b.charAt(i);
+            char ci = c.charAt(i);
+            if(ai == ci && ai == bi){
+                continue;
+                // do nothing
+                //if(DEBUG) System.out.print("AAA");
+            } else if(ai != ci && ci != bi && ai != bi){   // ATC
+                //p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
+                p.setCharAt(i, ai);
 
-		if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
-		    continue;
-		}
+                if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
+                    continue;
+                }
 
-		scores[1]++;
-		scores[2]++;
+                scores[1]++;
+                scores[2]++;
 
-		//if(DEBUG) System.out.print("ATC");
-	    } else if(ai == bi && ci != bi){   // AAT
-		//p += ai;
-		p.setCharAt(i, ai);
+                //if(DEBUG) System.out.print("ATC");
+            } else if(ai == bi && ci != bi){   // AAT
+                //p += ai;
+                p.setCharAt(i, ai);
 
-		if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
-		    continue;
-		}
-		scores[2]++;
+                if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
+                    continue;
+                }
+                scores[2]++;
 
-		// if(DEBUG) System.out.print("AAT");
-	    }
-	    else if(ai != bi && ci == bi){   // ATT
-		//p += bi;
-		p.setCharAt(i, bi);
-		if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
-		    continue;
-		}
-		scores[0]++;
-		//if(DEBUG) System.out.print("ATT");
-	    }
-	    else if(ai == ci && ci != bi){   // TAT
-		// p += ai;
-		p.setCharAt(i, ai);
+                // if(DEBUG) System.out.print("AAT");
+            }
+            else if(ai != bi && ci == bi){   // ATT
+                //p += bi;
+                p.setCharAt(i, bi);
+                if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
+                    continue;
+                }
+                scores[0]++;
+                //if(DEBUG) System.out.print("ATT");
+            }
+            else if(ai == ci && ci != bi){   // TAT
+                // p += ai;
+                p.setCharAt(i, ai);
 
-		if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
-		    continue;
-		}
+                if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
+                    continue;
+                }
 
-		scores[1]++;
+                scores[1]++;
 
-		//if(DEBUG) System.out.print("TAT");
-	    }
-	    else if(DEBUG){ System.out.println("Unmatched ABQ type"); }
-	}
-	if(DEBUG) System.out.println("score: "+scores[0]+"|"+scores[1]+"|"+scores[2]);
-	scores1[0] = new Integer(scores[0]);
-	scores1[1] = new Integer(scores[1]);
-	scores1[2] = new Integer(scores[2]);
-	String pseq = p.toString();
-	//	System.out.println(pseq.length() + "\t" + c.length());
-	return pseq;
+                //if(DEBUG) System.out.print("TAT");
+            }
+            else if(DEBUG){ System.out.println("Unmatched ABQ type"); }
+        }
+        if(DEBUG) System.out.println("score: "+scores[0]+"|"+scores[1]+"|"+scores[2]);
+        scores1[0] = new Integer(scores[0]);
+        scores1[1] = new Integer(scores[1]);
+        scores1[2] = new Integer(scores[2]);
+        String pseq = p.toString();
+        //	System.out.println(pseq.length() + "\t" + c.length());
+        return pseq;
     }
 
 
     public int getAlignmentLength(){
-	if(taxaseq != null){
-	    return (taxaseq.getAlignedSequenceString(0)).length();
-	}
-	else{
-	    return -1;
-	}
+        if(taxaseq != null){
+            return (taxaseq.getAlignedSequenceString(0)).length();
+        }
+        else{
+            return -1;
+        }
     }
 
 
     public static SimpleAlignment readFastaAlignmentFile(String fn){
-	/////////// Read the sequence/state file (expect fasta format)
-	SimpleAlignment sa = null;
-	try{ // This part is a parser for general data type. Also, it parser *manually* into SimpleAlignment. There is a FastaImporter in new BEAST package (below), but not make it work yet.
-	    sa = new SimpleAlignment();
-	    char[] agg = {'H', 'A', 'L', 'I', 'K', 'M', 'Y', 'C', 'E', 'P', 'G', 'S', 'D', 'T', 'F', 'V', 'W', 'N', 'X', '?', '-'};
-	    GeneralDataType dt1 = new GeneralDataType(agg);
-	    sa.setDataType(dt1);
-	    BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
-	    String fasline = br2.readLine();
-	    String desc;
-	    while(fasline != null){
-		fasline = fasline.replaceAll("\n", "");
-		String seqseq = "";
-		if(fasline.matches("^>.+")){
-		    desc = fasline;
-		    fasline = br2.readLine();
-		    while(fasline != null && !fasline.matches("^>.+")) {
-			seqseq += fasline;
-			fasline = br2.readLine();
-		    }
-		    desc = desc.replaceAll(">", "");
-		    seqseq = seqseq.replaceAll("\n", "");
-		    // manually make the alignment. Taxon is supposed to be name of the sequence
-		    sa.addSequence(new dr.evolution.sequence.Sequence(new Taxon(desc), seqseq));
-		}
-		// fasline now store desc for next sequence
-	    }
-	}
-	catch(Exception e){
-	    e.printStackTrace();
-	}
-	return sa;
+        /////////// Read the sequence/state file (expect fasta format)
+        SimpleAlignment sa = null;
+        try{ // This part is a parser for general data type. Also, it parser *manually* into SimpleAlignment. There is a FastaImporter in new BEAST package (below), but not make it work yet.
+            sa = new SimpleAlignment();
+            char[] agg = {'H', 'A', 'L', 'I', 'K', 'M', 'Y', 'C', 'E', 'P', 'G', 'S', 'D', 'T', 'F', 'V', 'W', 'N', 'X', '?', '-'};
+            GeneralDataType dt1 = new GeneralDataType(agg);
+            sa.setDataType(dt1);
+            BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
+            String fasline = br2.readLine();
+            String desc;
+            while(fasline != null){
+                fasline = fasline.replaceAll("\n", "");
+                String seqseq = "";
+                if(fasline.matches("^>.+")){
+                    desc = fasline;
+                    fasline = br2.readLine();
+                    while(fasline != null && !fasline.matches("^>.+")) {
+                        seqseq += fasline;
+                        fasline = br2.readLine();
+                    }
+                    desc = desc.replaceAll(">", "");
+                    seqseq = seqseq.replaceAll("\n", "");
+                    // manually make the alignment. Taxon is supposed to be name of the sequence
+                    sa.addSequence(new dr.evolution.sequence.Sequence(new Taxon(desc), seqseq));
+                }
+                // fasline now store desc for next sequence
+            }
+        }
+        catch(Exception e){
+            e.printStackTrace();
+        }
+        return sa;
     }
 
-    public static String[] readQueryFastaAlignmentFile(String fn) {
-        SimpleAlignment sa = readFastaAlignmentFile(fn);
-        String[] res = new String[2];
-        res[0] = sa.getTaxonId(0);
-        res[1] = sa.getAlignedSequenceString(0);
-        return res;
-    }
+    // public static String[] readQueryFastaAlignmentFile(String fn) {
+    //     SimpleAlignment sa = readFastaAlignmentFile(fn);
+    //     String[] res = new String[2];
+    //     res[0] = sa.getTaxonId(0);
+    //     res[1] = sa.getAlignedSequenceString(0);
+    //     return res;
+    // }
 
 
     /*
@@ -823,19 +824,27 @@ public class TIPars{
 
             Tree outtree = null;
             long startTime2 = System.currentTimeMillis();
+            SimpleAlignment query_align = readFastaAlignmentFile(inqfn);
             if (otype.equals("insertion")) {
-                String[] query_align = readQueryFastaAlignmentFile(inqfn);
-                outtree = myAdd.addQuerySequence(query_align[0], query_align[1], "q1", "p1", outdis, nidname, attname, new double[3], otype, 0); // q1 and p1 are the attributes of nodeQ and nodeP.
+                int nq = query_align.getTaxonCount();
+                for (int i=0; i<nq; i++) {
+                    String[] tmp_query = new String[2];
+                    tmp_query[0] = query_align.getTaxonId(i);
+                    tmp_query[1] = query_align.getAlignedSequenceString(i);
+                    String qid = "q" + (i+1);
+                    String pid = "p" + (i+1);
+                    outtree = myAdd.addQuerySequence(tmp_query[0], tmp_query[1], qid, pid, outdis, nidname, attname, new double[3], otype, 0); // q1 and p1 are the attributes of nodeQ and nodeP.
+                    myAdd.mytree = outtree;
+                }
             } else {
-                SimpleAlignment query_align = readFastaAlignmentFile(inqfn);
                 int nq = query_align.getTaxonCount();
                 placements = new String[nq];
                 for (int i=0; i<nq; i++) {
                     String[] tmp_query = new String[2];
                     tmp_query[0] = query_align.getTaxonId(i);
                     tmp_query[1] = query_align.getAlignedSequenceString(i);
-                    String qid = "q" + i;
-                    String pid = "p" + i;
+                    String qid = "q" + (i+1);
+                    String pid = "p" + (i+1);
                     outtree = myAdd.addQuerySequence(tmp_query[0], tmp_query[1], qid, pid, outdis, nidname, attname, new double[3], otype, i);
                 }
 

@@ -10,6 +10,10 @@ testRscript: TIPars
 	./tipars -t FourExamples/Try1_KC542905/NDV_fullg.tree -s FourExamples/Try1_KC542905/NDV_fullg.fas -a FourExamples/Try1_KC542905/anc_NDV_fullg.fas -q FourExamples/Try1_KC542905/KC542905.fas -o test.nex
 
 
+testRscript2: TIPars
+	./tipars -t FourExamples/rm2.tree -s FourExamples/taxa_seq.fas -a FourExamples/anc_seq.fas -q FourExamples/KC542905_KM885167.fas -o test.nwk
+
+
 testReadFASTA:
 	cd test;\
 	javac -classpath ..:../beast.jar testReadFASTA.java;\
