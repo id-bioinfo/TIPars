@@ -20,12 +20,12 @@ Tommy Tsan-Yuk LAM and Guangchuang YU
 
 ```bash
 ./tipars -t tree \
-	     -s aligned_taxa_sequence \
+	 -s aligned_taxa_sequence \
          -a aligned_ancestral_sequence \
-		 -q query_sequence \
-		 -m model \
-		 -g gap \
-		 -o output_file
+	 -q query_sequence \
+	 -m model \
+	 -g gap \
+	 -o output_file
 ```
 
 # Acknowledgements
