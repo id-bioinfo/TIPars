@@ -18,9 +18,12 @@ parser.add_argument("-p", "--type", default="insertion", help="one of 'insertion
 args = parser.parse_args()
 
 exec_dir = os.path.realpath(".")
-
-cmd = "java -jar " + exec_dir + "/TIPars.jar" + " " + args.tree + " " + args.sequence + " " + args.ancseq + " " + args.query + " " + args.model + " " + args.gap + " " + args.output + " " + args.type + " 0"
-
 ## print(exec_dir)
+
+cmd = "java -jar " + exec_dir + "/TIPars.jar" + " " + args.tree + " " + \
+      args.sequence + " " + args.ancseq + " " + args.query + " " + args.model + \
+      " " + args.gap + " " + args.output + " " + args.type + " 0"
+
+
 
 os.system(cmd)
