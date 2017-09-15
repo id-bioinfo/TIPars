@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 // Author: Tommy Tsan-Yuk LAM, Guangchuang YU
 // Description: Insert taxa into a reference phylogeny by parsimony.
-// last update 2017-08-21
+// last update 2017-09-15
 
 public class TIPars{
     private boolean DEBUG = false;
@@ -183,19 +183,19 @@ public class TIPars{
         FlexibleNode selected_nodeQ = new FlexibleNode(qtaxon);
         // Q-P pendent length
 
-        double pqlen;
-        if (model.equals("JC69")) {
-            // JC69
-            double p = selectedScores[2]/((double)getAlignmentLength());
-            pqlen = JC69(p);
-        } else if (model.equals("K2P")) {
-            // K2P
-            pqlen = K2P(nodePseq, nodeQseq);
-        } else {
-            // local estimation
-            pqlen = localEstimation(selectedScores, original_B);
-        }
-        selected_nodeQ.setLength(pqlen);
+        // double pqlen;
+        // if (model.equals("JC69")) {
+        //     // JC69
+        //     double p = selectedScores[2]/((double)getAlignmentLength());
+        //     pqlen = JC69(p);
+        // } else if (model.equals("K2P")) {
+        //     // K2P
+        //     pqlen = K2P(nodePseq, nodeQseq);
+        // } else {
+        //     // local estimation
+        //     pqlen = localEstimation(selectedScores, original_B);
+        // }
+        // selected_nodeQ.setLength(pqlen);
 
         FlexibleNode selected_nodeP = new FlexibleNode();
         // set the attributes of newly added node.
@@ -209,7 +209,7 @@ public class TIPars{
             afterscores[1] = selected_nodeB.getLength();
             afterscores[2] = selected_nodeQ.getLength();
         } else if(selectedScores[1] == 0){  // P-B is zero branch length, meaning that Q is inserted into B directly.
-            if(selected_nodeB.isExternal()){ // If B is leaf, cannot add the Q directly there, must add P node.
+            if(selected_nodeB.isExternal()) { // If B is leaf, cannot add the Q directly there, must add P node.
                 double newNodeBLength = 0.0;
                 double newNodePLength = selected_nodeB.getLength();
                 selected_nodeP.setLength(newNodePLength);
@@ -218,13 +218,13 @@ public class TIPars{
                 selected_nodeA.removeChild(selected_nodeB);
                 selected_nodeA.addChild(selected_nodeP);
                 selected_nodeP.addChild(selected_nodeB);
-            } else{
+            } else {
                 selected_nodeB.addChild(selected_nodeQ);
             }
             afterscores[0] = selected_nodeB.getLength();
             afterscores[1] = 0.0;
             afterscores[2] = selected_nodeQ.getLength();
-        } else{
+        } else {
             double Pratio = selectedScores[0]/((double)(selectedScores[0]+selectedScores[1]));
             double newNodeBLength = selected_nodeB.getLength()*(1.0-Pratio);
             double newNodePLength = selected_nodeB.getLength()*Pratio;
@@ -241,6 +241,23 @@ public class TIPars{
         ABQ_brlen[0] = afterscores[0];
         ABQ_brlen[1] = afterscores[1];
         ABQ_brlen[2] = afterscores[2];
+
+        // Q-P pendent length
+
+        double pqlen;
+        if (model.equals("JC69")) {
+            // JC69
+            double p = selectedScores[2]/((double)getAlignmentLength());
+            pqlen = JC69(p);
+        } else if (model.equals("K2P")) {
+            // K2P
+            pqlen = K2P(nodePseq, nodeQseq);
+        } else {
+            // local estimation
+            pqlen = localEstimation2(selectedScores, afterscores[1]);
+        }
+        selected_nodeQ.setLength(pqlen);
+
 
         if (DEBUG)
             System.out.println("ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2] + "\t" + selectedScores[2]*(ABQ_brlen[0]+ABQ_brlen[1])/(selectedScores[0]+selectedScores[1]));
@@ -339,6 +356,16 @@ public class TIPars{
             return 0;
         }
         double d = ABbranch * ((double) scores[2])/((double) (scores[0]+scores[1]));
+
+        return d;
+    }
+
+    public static double localEstimation2(int[] scores, double BPbranch) {
+        if (scores[0] + scores[1] == 0) {
+            return 0;
+        }
+        double d = BPbranch * ((double) scores[2])/((double) scores[1]);
+
         return d;
     }
 

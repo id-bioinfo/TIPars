@@ -25,5 +25,4 @@ cmd = "java -jar " + exec_dir + "/TIPars.jar" + " " + args.tree + " " + \
       " " + args.gap + " " + args.output + " " + args.type + " 0"
 
 
-
 os.system(cmd)
