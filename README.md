@@ -30,4 +30,4 @@ Tommy Tsan-Yuk LAM and Guangchuang YU
 
 # Acknowledgements
 
-- This project is supported in part by Hong Kong Research Grants Council General Research Fund (17150816).
+- This project is supported by Hong Kong Research Grants Council General Research Fund (17150816).
