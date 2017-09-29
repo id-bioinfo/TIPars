@@ -1,5 +1,5 @@
-import dr.evolution.sequence.Sequence;
 import dr.app.tools.NexusExporter;
+import dr.evolution.sequence.Sequence;
 import dr.evolution.alignment.SimpleAlignment;
 import dr.evolution.alignment.SitePatterns;
 import dr.evolution.tree.FlexibleNode;
@@ -183,19 +183,19 @@ public class TIPars{
         FlexibleNode selected_nodeQ = new FlexibleNode(qtaxon);
         // Q-P pendent length
 
-        // double pqlen;
-        // if (model.equals("JC69")) {
-        //     // JC69
-        //     double p = selectedScores[2]/((double)getAlignmentLength());
-        //     pqlen = JC69(p);
-        // } else if (model.equals("K2P")) {
-        //     // K2P
-        //     pqlen = K2P(nodePseq, nodeQseq);
-        // } else {
-        //     // local estimation
-        //     pqlen = localEstimation(selectedScores, original_B);
-        // }
-        // selected_nodeQ.setLength(pqlen);
+        double pqlen;
+        if (model.equals("JC69")) {
+            // JC69
+            double p = selectedScores[2]/((double)getAlignmentLength());
+            pqlen = JC69(p);
+        } else if (model.equals("K2P")) {
+            // K2P
+            pqlen = K2P(nodePseq, nodeQseq);
+        } else {
+            // local estimation
+            pqlen = localEstimation(selectedScores, original_B);
+        }
+        selected_nodeQ.setLength(pqlen);
 
         FlexibleNode selected_nodeP = new FlexibleNode();
         // set the attributes of newly added node.
@@ -244,19 +244,19 @@ public class TIPars{
 
         // Q-P pendent length
 
-        double pqlen;
-        if (model.equals("JC69")) {
-            // JC69
-            double p = selectedScores[2]/((double)getAlignmentLength());
-            pqlen = JC69(p);
-        } else if (model.equals("K2P")) {
-            // K2P
-            pqlen = K2P(nodePseq, nodeQseq);
-        } else {
-            // local estimation
-            pqlen = localEstimation2(selectedScores, afterscores[1]);
-        }
-        selected_nodeQ.setLength(pqlen);
+        // double pqlen;
+        // if (model.equals("JC69")) {
+        //     // JC69
+        //     double p = selectedScores[2]/((double)getAlignmentLength());
+        //     pqlen = JC69(p);
+        // } else if (model.equals("K2P")) {
+        //     // K2P
+        //     pqlen = K2P(nodePseq, nodeQseq);
+        // } else {
+        //     // local estimation
+        //     pqlen = localEstimation2(selectedScores, afterscores[1]);
+        // }
+        // selected_nodeQ.setLength(pqlen);
 
 
         if (DEBUG)
@@ -415,29 +415,27 @@ public class TIPars{
 
     // If not found return -1, -99, else return branch length & number of node distance
     public static double[] nodeAisAncestorOfNodeB(FlexibleNode a, FlexibleNode b){
-	if(a == b){
-	    return new double[]{0, 0};
-	}
-	else{
-	    double outdis = b.getLength();
-	    FlexibleNode k = b.getParent();
-	    boolean found = false;
-	    double num_node = 1;
-	    while(!k.isRoot()){
-		if(k == a){
-		    found = true;
-		    break;
-		}
-		else{
-		    outdis += k.getLength();
-		    k = k.getParent();
-		    num_node += 1;
-		}
-	    }
-	    if(k.isRoot() && k == a){ outdis += k.getLength(); }
-	    if(found){ return new double[]{outdis, num_node}; }
-	    else{ return new double[]{-1, -99}; } // -99 is dummy value
-	}
+        if(a == b){
+            return new double[]{0, 0};
+        } else{
+            double outdis = b.getLength();
+            FlexibleNode k = b.getParent();
+            boolean found = false;
+            double num_node = 1;
+            while(!k.isRoot()){
+                if(k == a){
+                    found = true;
+                    break;
+                } else{
+                    outdis += k.getLength();
+                    k = k.getParent();
+                    num_node += 1;
+                }
+            }
+            if(k.isRoot() && k == a){ outdis += k.getLength(); }
+            if(found){ return new double[]{outdis, num_node}; }
+            else{ return new double[]{-1, -99}; } // -99 is dummy value
+        }
     }
 
 
@@ -466,13 +464,11 @@ public class TIPars{
                 p.setParent(null);
                 t.endTreeEdit();
                 return new TIPars().new FlexibleNodeBranch<FlexibleNode, Double>(b, new Double(oldb2p));
-            }
-            else{
+            } else{
                 t.endTreeEdit();
-                return new TIPars().new FlexibleNodeBranch<FlexibleNode, Double>(p, new Double(0.0));
+                return new TIPars().new FlexibleNodeBranch<FlexibleNode, Double>(p, new Double(0.0)); //? p, p.getLentth ?
             }
-        }
-        catch(Exception e){
+        } catch(Exception e){
             e.printStackTrace();
             return null;
         }
@@ -613,7 +609,7 @@ public class TIPars{
                 //if(DEBUG) System.out.print("AAA");
             } else if(ai != ci && ci != bi && ai != bi){   // ATC
                 //p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
-                p.setCharAt(i, ai);
+                p.setCharAt(i, bi); // //// try bi
 
                 if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
                     continue;
@@ -670,8 +666,7 @@ public class TIPars{
     public int getAlignmentLength(){
         if(taxaseq != null){
             return (taxaseq.getAlignedSequenceString(0)).length();
-        }
-        else{
+        } else{
             return -1;
         }
     }
@@ -680,7 +675,9 @@ public class TIPars{
     public static SimpleAlignment readFastaAlignmentFile(String fn){
         /////////// Read the sequence/state file (expect fasta format)
         SimpleAlignment sa = null;
-        try{ // This part is a parser for general data type. Also, it parser *manually* into SimpleAlignment. There is a FastaImporter in new BEAST package (below), but not make it work yet.
+        try{
+            // This part is a parser for general data type. Also, it parser *manually* into SimpleAlignment.
+            // There is a FastaImporter in new BEAST package (below), but not make it work yet.
             sa = new SimpleAlignment();
             char[] agg = {'H', 'A', 'L', 'I', 'K', 'M', 'Y', 'C', 'E', 'P', 'G', 'S', 'D', 'T', 'F', 'V', 'W', 'N', 'X', '?', '-'};
             GeneralDataType dt1 = new GeneralDataType(agg);
@@ -811,8 +808,7 @@ public class TIPars{
                     nidname = getShellInput("Enter your nid attribute name(e.g. nid): ");
                     attname = getShellInput("Enter your genotype attribute name (e.g. GenName): ");
                 }
-            }
-            else{
+            } else{
                 intfn = args[0];
                 insfn = args[1];
                 inafn = args[2];
@@ -831,7 +827,7 @@ public class TIPars{
             }
             /////////// Read the sequence/state file (expect fasta format)
             SimpleAlignment taxa_align = readFastaAlignmentFile(insfn);
-            SimpleAlignment anc_align = readFastaAlignmentFile(inafn);
+            SimpleAlignment anc_align  = readFastaAlignmentFile(inafn);
 
             //System.out.println(query_align[0] + "\n\n\n" + query_align[1]);
 
