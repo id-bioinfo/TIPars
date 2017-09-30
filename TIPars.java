@@ -275,7 +275,7 @@ public class TIPars{
             System.out.println(""+selectedScores[0]+"\t"+selectedScores[1]+"\t"+original_B+"\t"+selectedScores[2]+"\t"+afterscores[0]+"\t"+afterscores[1]+"\t"+afterscores[2]+"\t"+selectedBnid+"\t"+selectedBatt+"\n");
 
         System.out.println("\nquery sequence: " + qname);
-        System.out.println("insert to edge: " + selectedBnid + "-" + (String)selected_nodeA.getAttribute(nidname));
+        System.out.println("insert to edge: " + (String)selected_nodeA.getAttribute(nidname) + "-" + selectedBnid);
         System.out.println("distal_length: " + afterscores[0]);
         System.out.println("pendant_length: " + afterscores[2] + "\n");
 
@@ -612,15 +612,26 @@ public class TIPars{
                 // do nothing
                 //if(DEBUG) System.out.print("AAA");
             } else if(ai != ci && ci != bi && ai != bi){   // ATC
-                //p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
-                p.setCharAt(i, ai);
+                // no bias now. prefer to assign the character using the most closely seqence.
+                if (scores[0] <= scores[1] && scores[0] <= scores[2]) {
+                    //p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
+                    p.setCharAt(i, ai);
+                    scores[1]++;
+                    scores[2]++;
+                } else if (scores[1] <= scores[0] && scores[1] <= scores[2]) {
+                    p.setCharAt(i, bi);
+                    scores[0]++;
+                    scores[2]++;
+                } else {
+                    p.setCharAt(i, ci);
+                    scores[0]++;
+                    scores[1]++;
+                }
+
 
                 if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
                     continue;
                 }
-
-                scores[1]++;
-                scores[2]++;
 
                 //if(DEBUG) System.out.print("ATC");
             } else if(ai == bi && ci != bi){   // AAT
