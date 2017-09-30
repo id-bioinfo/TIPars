@@ -613,19 +613,19 @@ public class TIPars{
                 //if(DEBUG) System.out.print("AAA");
             } else if(ai != ci && ci != bi && ai != bi){   // ATC
                 // no bias now. prefer to assign the character using the most closely seqence.
-                if (scores[0] <= scores[1] && scores[0] <= scores[2]) {
-                    //p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
-                    p.setCharAt(i, ai);
+                if (scores[2] <= scores[0] && scores[2] <= scores[1]) {
+                    p.setCharAt(i, ci);
+                    scores[0]++;
                     scores[1]++;
-                    scores[2]++;
                 } else if (scores[1] <= scores[0] && scores[1] <= scores[2]) {
                     p.setCharAt(i, bi);
                     scores[0]++;
                     scores[2]++;
                 } else {
-                    p.setCharAt(i, ci);
-                    scores[0]++;
+                    //p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
+                    p.setCharAt(i, ai);
                     scores[1]++;
+                    scores[2]++;
                 }
 
 
