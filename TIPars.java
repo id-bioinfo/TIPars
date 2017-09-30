@@ -40,17 +40,19 @@ public class TIPars{
     private String gap;
     private static String[] placements = null;
     private static int edge_number = 1;
+    private String OUTPUT_FOLDER;
     public TIPars(){
 
     }
 
-    public TIPars(SimpleAlignment taxaseq, SimpleAlignment ancseq, Tree mytree, String internalnode_nidname, String model, String gap, String otype){
+    public TIPars(SimpleAlignment taxaseq, SimpleAlignment ancseq, Tree mytree, String internalnode_nidname, String model, String gap, String otype, String OUTPUT_FOLDER){
         this.mytree = mytree;
         this.taxaseq = taxaseq;
         this.ancseq = ancseq;
         this.model = model;
         this.gap = gap;
         this.internalnode_nidname = internalnode_nidname;
+        this.OUTPUT_FOLDER = OUTPUT_FOLDER;
         setupHashtableOfNode2Seq();
         setupHashtableOfNode2edge(otype);
     }
@@ -292,7 +294,7 @@ public class TIPars{
         if(DEBUG) System.out.println("TaxonCount after taxalist refresh: "+mynewTree.getTaxonCount());
         node2Sseq.put(selected_nodeP, nodePseq);
         node2Sseq.put(selected_nodeQ, nodeQseq);
-        if (OUTPUT_PSEQ) writeFASTA(pid, nodePseq);
+        if (OUTPUT_PSEQ) writeFASTA(pid, nodePseq, OUTPUT_FOLDER);
         return mynewTree;
     }
 
@@ -827,6 +829,9 @@ public class TIPars{
                 }
 
             }
+
+            String OUTPUT_FOLDER = getFolder(outfn);
+
             /////////// Read the sequence/state file (expect fasta format)
             SimpleAlignment taxa_align = readFastaAlignmentFile(insfn);
             SimpleAlignment anc_align  = readFastaAlignmentFile(inafn);
@@ -845,7 +850,7 @@ public class TIPars{
 
             NewickImporter tni = new NewickImporter(new FileReader(intfn));
             Tree tree = tni.importTree(taxa_align);
-            TIPars myAdd = new TIPars(taxa_align, anc_align, tree, nidname, inm, ing, otype);
+            TIPars myAdd = new TIPars(taxa_align, anc_align, tree, nidname, inm, ing, otype, OUTPUT_FOLDER);
 
             Tree outtree = null;
             long startTime2 = System.currentTimeMillis();
@@ -890,6 +895,10 @@ public class TIPars{
         }
     }
 
+    public static String getFolder(String filename) {
+        String dir = filename.substring(0, filename.lastIndexOf("/") + 1);
+        return dir;
+    }
 
     public static void writeToTree(Tree tree, String fn, String otype) {
         try{
@@ -984,8 +993,8 @@ public class TIPars{
         }
     }
 
-    public static void writeFASTA(String desc, String seq) {
-        String output = desc + ".fas";
+    public static void writeFASTA(String desc, String seq, String OUTPUT_FOLDER) {
+        String output = OUTPUT_FOLDER + desc + ".fas";
         StringBuilder buffer = new StringBuilder();
         buffer.append("> ");
         buffer.append(desc);
