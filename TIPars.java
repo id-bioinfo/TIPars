@@ -27,6 +27,7 @@ import java.util.Iterator;
 
 public class TIPars{
     private boolean DEBUG = false;
+    private boolean OUTPUT_PSEQ = true;
     private SimpleAlignment taxaseq = null;
     private SimpleAlignment ancseq = null;
     private Tree mytree = null;
@@ -291,6 +292,7 @@ public class TIPars{
         if(DEBUG) System.out.println("TaxonCount after taxalist refresh: "+mynewTree.getTaxonCount());
         node2Sseq.put(selected_nodeP, nodePseq);
         node2Sseq.put(selected_nodeQ, nodeQseq);
+        if (OUTPUT_PSEQ) writeFASTA(pid, nodePseq);
         return mynewTree;
     }
 
@@ -609,7 +611,7 @@ public class TIPars{
                 //if(DEBUG) System.out.print("AAA");
             } else if(ai != ci && ci != bi && ai != bi){   // ATC
                 //p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
-                p.setCharAt(i, bi); // //// try bi
+                p.setCharAt(i, ai);
 
                 if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
                     continue;
@@ -978,6 +980,22 @@ public class TIPars{
             fw.close();
         }
         catch(Exception e){
+            e.printStackTrace();
+        }
+    }
+
+    public static void writeFASTA(String desc, String seq) {
+        String output = desc + ".fas";
+        StringBuilder buffer = new StringBuilder();
+        buffer.append("> ");
+        buffer.append(desc);
+        buffer.append("\n");
+        buffer.append(seq);
+        try{
+            PrintStream out = new PrintStream(new FileOutputStream(new File(output)));
+            out.println(buffer.toString());
+            out.close();
+        } catch(Exception e) {
             e.printStackTrace();
         }
     }
