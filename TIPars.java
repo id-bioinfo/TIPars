@@ -27,7 +27,7 @@ import java.util.Iterator;
 
 public class TIPars{
     private boolean DEBUG = false;
-    private boolean OUTPUT_PSEQ = true;
+    private boolean OUTPUT_PSEQ = false;
     private SimpleAlignment taxaseq = null;
     private SimpleAlignment ancseq = null;
     private Tree mytree = null;
