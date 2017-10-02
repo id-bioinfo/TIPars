@@ -26,7 +26,7 @@ import java.util.Iterator;
 // last update 2017-09-15
 
 public class TIPars{
-    private boolean DEBUG = false;
+    private boolean DEBUG = true;
     private boolean OUTPUT_PSEQ = false;
     private SimpleAlignment taxaseq = null;
     private SimpleAlignment ancseq = null;
@@ -203,7 +203,7 @@ public class TIPars{
         FlexibleNode selected_nodeP = new FlexibleNode();
         // set the attributes of newly added node.
         selected_nodeP.setAttribute(this.internalnode_nidname, pid);
-        selected_nodeQ.setAttribute(this.internalnode_nidname, qid);
+        selected_nodeQ.setAttribute(this.internalnode_nidname, qname);
 
         if(selectedScores[0] == 0){ // A-P is zero branch length, meaning that Q is inserted into A directly.
             selected_nodeP = selected_nodeA;
@@ -244,22 +244,6 @@ public class TIPars{
         ABQ_brlen[0] = afterscores[0];
         ABQ_brlen[1] = afterscores[1];
         ABQ_brlen[2] = afterscores[2];
-
-        // Q-P pendent length
-
-        // double pqlen;
-        // if (model.equals("JC69")) {
-        //     // JC69
-        //     double p = selectedScores[2]/((double)getAlignmentLength());
-        //     pqlen = JC69(p);
-        // } else if (model.equals("K2P")) {
-        //     // K2P
-        //     pqlen = K2P(nodePseq, nodeQseq);
-        // } else {
-        //     // local estimation
-        //     pqlen = localEstimation2(selectedScores, afterscores[1]);
-        // }
-        // selected_nodeQ.setLength(pqlen);
 
 
         if (DEBUG)
