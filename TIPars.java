@@ -26,7 +26,7 @@ import java.util.Iterator;
 // last update 2017-09-15
 
 public class TIPars{
-    private boolean DEBUG = true;
+    private boolean DEBUG = false;
     private boolean OUTPUT_PSEQ = false;
     private SimpleAlignment taxaseq = null;
     private SimpleAlignment ancseq = null;
@@ -276,8 +276,12 @@ public class TIPars{
         if(DEBUG) System.out.println("TaxonCount: "+mynewTree.getTaxonCount());
         mynewTree.toAdoptNodes((FlexibleNode)mynewTree.getRoot());
         if(DEBUG) System.out.println("TaxonCount after taxalist refresh: "+mynewTree.getTaxonCount());
-        node2Sseq.put(selected_nodeP, nodePseq);
-        node2Sseq.put(selected_nodeQ, nodeQseq);
+
+        // after adoptNodes(), the node number encoded in FlexibleNode change, so the node2Sseq hashtable should also refresh too.
+        // add the sequence to ancseq and taxaseq for running setupHashtableOfNode2Seq to refresh the hash table
+        ancseq.addSequence(new  dr.evolution.sequence.Sequence(new Taxon(pid), nodePseq));
+        taxaseq.addSequence(new dr.evolution.sequence.Sequence(new Taxon(qname), nodeQseq));
+
         if (OUTPUT_PSEQ) writeFASTA(pid, nodePseq, OUTPUT_FOLDER);
         return mynewTree;
     }
@@ -708,74 +712,6 @@ public class TIPars{
         return sa;
     }
 
-    // public static String[] readQueryFastaAlignmentFile(String fn) {
-    //     SimpleAlignment sa = readFastaAlignmentFile(fn);
-    //     String[] res = new String[2];
-    //     res[0] = sa.getTaxonId(0);
-    //     res[1] = sa.getAlignedSequenceString(0);
-    //     return res;
-    // }
-
-
-    /*
-    public static SimpleAlignment readSingleLineFastaAlignmentFile(String fn){
-	/////////// Read the sequence/state file (expect fasta format)
-	SimpleAlignment sa = null;
-	try{ // This part is a parser for general data type. Also, it parser *manually* into SimpleAlignment. There is a FastaImporter in new BEAST package (below), but not make it work yet.
-	    sa = new SimpleAlignment();
-	    char[] agg = {'H', 'A', 'L', 'I', 'K', 'M', 'Y', 'C', 'E', 'P', 'G', 'S', 'D', 'T', 'F', 'V', 'W', 'N', 'X', '?', '-'};
-	    GeneralDataType dt1 = new GeneralDataType(agg);
-	    sa.setDataType(dt1);
-	    BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
-	    String line2 = br2.readLine();
-	    while(line2 != null){
-		line2 = line2.replaceAll("\n", "");
-		if(line2.matches("^>.+")){
-		    String seqseq = br2.readLine();
-		    seqseq = seqseq.replaceAll("\n", "");
-		    line2 = line2.replaceAll(">", "");
-		    sa.addSequence(new dr.evolution.sequence.Sequence(new Taxon(line2), seqseq)); // manually make the alignment. Taxon is supposed to be name of the sequence
-		}
-		line2 = br2.readLine();
-	    }
-	}
-	// 		try{ // Not yet functional.
-	//  			BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
-	//             FastaImporter importer = new FastaImporter(br2, Nucleotides.INSTANCE);  // Assume nucleotide sequences
-	//             sa = (SimpleAlignment)(importer.importAlignment());
-	// 		}
-	catch(Exception e){
-	    e.printStackTrace();
-	}
-	return sa;
-    }
-
-    // Read query fasta, only read one entry.
-    public static String[] readSingleLineQueryFastaAlignmentFile(String fn){
-	/////////// Read the sequence/state file (expect fasta format)
-	String[] sa = new String[2];
-	try{
-	    BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
-	    String line2 = br2.readLine();
-	    while(line2 != null){
-		line2 = line2.replaceAll("\n", "");
-		if(line2.matches("^>.+")){
-		    String seqseq = br2.readLine();
-		    seqseq = seqseq.replaceAll("\n", "");
-		    line2 = line2.replaceAll(">", "");
-		    sa[0] = line2; sa[1] = seqseq;
-		}
-		line2 = br2.readLine();
-		break;
-	    }
-	}
-	catch(Exception e){
-	    e.printStackTrace();
-	}
-	return sa;
-    }
-    */
-
     public static void main(String[] args) {
         long startTime = System.currentTimeMillis();
 
@@ -858,8 +794,10 @@ public class TIPars{
                     tmp_query[1] = query_align.getAlignedSequenceString(i);
                     String qid = "q" + (i+1);
                     String pid = "p" + (i+1);
-                    outtree = myAdd.addQuerySequence(tmp_query[0], tmp_query[1], qid, pid, outdis, nidname, attname, new double[3], otype, 0); // q1 and p1 are the attributes of nodeQ and nodeP.
+                    outtree = myAdd.addQuerySequence(tmp_query[0], tmp_query[1], qid, pid, outdis, nidname, attname, new double[3], otype, 0);
+                    // q1 and p1 are the attributes of nodeQ and nodeP.
                     myAdd.mytree = outtree;
+                    myAdd.setupHashtableOfNode2Seq();
                 }
             } else {
                 int nq = query_align.getTaxonCount();
