@@ -176,8 +176,11 @@ public class TIPars{
         if (DEBUG) System.out.println("selectedScores: " + selectedScores[0] + "\t" + selectedScores[1] + "\t" + selectedScores[2]);
         // add the query node to the Tree copy.
         double[] afterscores = {0.0, 0.0, 0.0};
+
         MyFlexibleTree mynewTree = new MyFlexibleTree(mytree, true);
         this.copyAttributeFromOneNodeToAnother((FlexibleNode)mytree.getRoot(), (FlexibleNode)mynewTree.getRoot());
+
+
         mynewTree.beginTreeEdit();
         FlexibleNode selected_nodeB = (FlexibleNode)mynewTree.getNode(selectedNodeBIndex);
         double original_B = selected_nodeB.getLength();
@@ -277,7 +280,10 @@ public class TIPars{
         mynewTree.toAdoptNodes((FlexibleNode)mynewTree.getRoot());
         if(DEBUG) System.out.println("TaxonCount after taxalist refresh: "+mynewTree.getTaxonCount());
 
-        // after adoptNodes(), the node number encoded in FlexibleNode change, so the node2Sseq hashtable should also refresh too.
+        // node2Sseq.put(selected_nodeP, nodePseq);
+        // node2Sseq.put(selected_nodeQ, nodeQseq);
+
+        // mynewTree (MyFlexibleTree object) is a new copy of mytree (Tree object), and need to refresh hash table of node to seq
         // add the sequence to ancseq and taxaseq for running setupHashtableOfNode2Seq to refresh the hash table
         ancseq.addSequence(new  dr.evolution.sequence.Sequence(new Taxon(pid), nodePseq));
         taxaseq.addSequence(new dr.evolution.sequence.Sequence(new Taxon(qname), nodeQseq));
@@ -810,7 +816,6 @@ public class TIPars{
                     String pid = "p" + (i+1);
                     outtree = myAdd.addQuerySequence(tmp_query[0], tmp_query[1], qid, pid, outdis, nidname, attname, new double[3], otype, i);
                 }
-
             }
             long endTime2 = System.currentTimeMillis();
             long totalTime2 = endTime2 - startTime2;
@@ -834,7 +839,7 @@ public class TIPars{
     }
 
     public static void writeToTree(Tree tree, String fn, String otype) {
-        try{
+        try {
             StringBuilder buffer = new StringBuilder();
             if (otype.equals("placement")) {
                 buffer.append("{\n\t\"tree\": \"");
@@ -861,8 +866,7 @@ public class TIPars{
             PrintStream out = new PrintStream(new FileOutputStream(new File(fn)));
             out.println(buffer.toString());
             out.close();
-        }
-        catch(Exception e){
+        } catch(Exception e){
             e.printStackTrace();
         }
     }
@@ -920,8 +924,7 @@ public class TIPars{
             ts[0] = t;
             kne.exportTrees(ts, true);
             fw.close();
-        }
-        catch(Exception e){
+        } catch(Exception e){
             e.printStackTrace();
         }
     }
@@ -944,18 +947,15 @@ public class TIPars{
 
     public static String getShellInput(String question){
         String myfile = "";
-        try
-            {
-                BufferedReader stdin =
-                    new BufferedReader(
-                                       new InputStreamReader(System.in));
-                System.out.print(question);
-                myfile = stdin.readLine();
-            }
-        catch (Exception e)
-            {
-                System.out.println("Error in screen reading");
-            }
+        try {
+            BufferedReader stdin =
+                new BufferedReader(new InputStreamReader(System.in)
+                                   );
+            System.out.print(question);
+            myfile = stdin.readLine();
+        } catch (Exception e) {
+            System.out.println("Error in screen reading");
+        }
         return myfile;
     }
 
