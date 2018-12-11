@@ -26,20 +26,20 @@ Tommy Tsan-Yuk LAM and Guangchuang YU
 	 -m model \
 	 -g gap \
 	 -p type \	 
-	 -o output_file
+	 -o output_file \
 ```
 
 # Option Details
 
-(input files)
--t: Provide the name of reference tree file for insertion
--s: Provide the name of alignment file of the taxa sequences; Their names should match the taxa names in the reference tree)
--a: Provide the name of alignment file of the ancestral sequences; Their names should match the node labels in the reference tree)
--q: Provide the name of alignment file of query sequence(s). Their nucleotides should be in aligned positions with the other input alignments.
+(input files) \
+-t: Provide the name of reference tree file for insertion \
+-s: Provide the name of alignment file of the taxa sequences; Their names should match the taxa names in the reference tree) \
+-a: Provide the name of alignment file of the ancestral sequences; Their names should match the node labels in the reference tree) \
+-q: Provide the name of alignment file of query sequence(s). Their nucleotides should be in aligned positions with the other input alignments. \
 
-(model option)
--m: Choose the distance model for estimating the branch length (pendant length) of the inserted query sequence. 
--g: Choose gap treatment method: (1) as an extra character or just 
+(model option) \
+-m: Choose the distance model for estimating the branch length (pendant length) of the inserted query sequence. \
+-g: Choose gap treatment method: (1) as an extra character or just \
 
 
 # Acknowledgements
