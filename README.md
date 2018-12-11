@@ -31,17 +31,37 @@ Tommy Tsan-Yuk LAM and Guangchuang YU
 
 # Option Details
 
-(input files) \
--t: Provide the name of reference tree file for insertion \
--s: Provide the name of alignment file of the taxa sequences; Their names should match the taxa names in the reference tree) \
--a: Provide the name of alignment file of the ancestral sequences; Their names should match the node labels in the reference tree) \
--q: Provide the name of alignment file of query sequence(s). Their nucleotides should be in aligned positions with the other input alignments. \
+## input files
 
-(model option) \
--m: Choose the distance model for estimating the branch length (pendant length) of the inserted query sequence. \
--g: Choose gap treatment method: (1) as an extra character or just \
++ `-t`: Provide the file name of reference tree for insertion, in newick format.
++ `-s`: Provide the file name of alignment of the taxa sequences; The names of sequences should match the taxa names in the reference tree. 
++ `-a`: Provide the file name of alignment of the ancestral sequences; The names of sequences should match the node labels in the reference tree. 
++ `-q`: Provide the file name of alignment of query sequence(s). The nucleotides should be in aligned positions with the other input alignments. 
 
+## model option
+
++ `-m`: Choose the distance model for estimating the branch length (pendant length) of the inserted query sequence
+  + JC69 (Juke-Cantor 1969)
+  + K2P (Kimura two-parameter)
+  + LE (Local estimation using branches of the triplet tree, default)
++ `-g`: Choose gap treatment method:
+  + `ignore`: ignore all gaps (default)
+  + `inner`: only count inner gaps
+  + `all`: count all gaps as sequence characters
+
+## output file
+
++ `-o`: output file name (`TIPars_output.tree` by default)
++ `-p`: algorithm type
+  + `insertion` (default) for query sequence(s) insertion
+    - output `newick` tree file with query sequence(s) inserted
+    - mainly for updating tree
+    - progressively insertions
+  + `placement` for query sequence(s) placement
+    - output `jplace` tree file that incorporates original tree with placement information
+    - mainly for query sequence(s) classification
+    - independent placement
 
 # Acknowledgements
 
-- This project is supported by Hong Kong Research Grants Council General Research Fund (17150816).
+This project is supported by Hong Kong Research Grants Council General Research Fund (17150816).
