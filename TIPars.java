@@ -197,7 +197,7 @@ public class TIPars{
 
         if(selectedScores[0] == 0){ // A-P is zero branch length, meaning that Q is inserted into A directly.
             selected_nodeP = selected_nodeA;
-            selected_nodeA.addChild(selected_nodeQ);  //NOTE: should node A nid change to node P nid? AWAITING TO SOLVE!!
+            selected_nodeA.addChild(selected_nodeQ);  
             afterscores[0] = 0.0;
             afterscores[1] = selected_nodeB.getLength();
             afterscores[2] = selected_nodeQ.getLength();
@@ -533,7 +533,7 @@ public class TIPars{
                 continue;
                 // do nothing
             } else if(ai != ci && ci != bi && ai != bi){   // ATC
-                // no bias now. prefer to assign the character using the most closely seqence.
+                // prefer to assign the character using the most closely seqence.
                 if (scores[2] <= scores[0] && scores[2] <= scores[1]) {
                     p.setCharAt(i, ci);
                     scores[0]++;
@@ -543,7 +543,6 @@ public class TIPars{
                     scores[0]++;
                     scores[2]++;
                 } else {
-                    //p += ai;     // NOTE: biased to parent node char; should try alternating ai and bi to balance the node p position
                     p.setCharAt(i, ai);
                     scores[1]++;
                     scores[2]++;
@@ -604,8 +603,6 @@ public class TIPars{
         /////////// Read the sequence/state file (expect fasta format)
         SimpleAlignment sa = null;
         try{
-            // This part is a parser for general data type. Also, it parser *manually* into SimpleAlignment.
-            // There is a FastaImporter in new BEAST package (below), but not make it work yet.
             sa = new SimpleAlignment();
             char[] agg = {'H', 'A', 'L', 'I', 'K', 'M', 'Y', 'C', 'E', 'P', 'G', 'S', 'D', 'T', 'F', 'V', 'W', 'N', 'X', '?', '-'};
             GeneralDataType dt1 = new GeneralDataType(agg);
