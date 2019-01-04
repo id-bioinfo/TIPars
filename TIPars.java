@@ -23,7 +23,7 @@ import java.util.Iterator;
 
 // Author: Tommy Tsan-Yuk LAM, Guangchuang YU
 // Description: Insert taxa into a reference phylogeny by parsimony.
-// last update 2017-09-15
+// last update 2019-01-04
 
 public class TIPars{
     private boolean DEBUG = false;
@@ -81,7 +81,6 @@ public class TIPars{
         for(int i=0; i<mytree.getInternalNodeCount(); i++){
             FlexibleNode n = (FlexibleNode)mytree.getInternalNode(i);
             int t = ancseq.getTaxonIndex((String)(n.getAttribute(this.internalnode_nidname)));
-            //System.out.println(t);
             if(t >= 0){
                 node2Sseq.put(n, ancseq.getAlignedSequenceString(t));
             } else if(DEBUG){
@@ -130,17 +129,6 @@ public class TIPars{
             if(!nodeB.isRoot()){
                 // nodeA-nodeB pairs
                 FlexibleNode nodeA = (FlexibleNode)nodeB.getParent();
-                /////////// IMPORTANT NOTE: Ignore the case when nodeA is root first.
-                ///////////                 Reason: 1) BEAST cannot intake root attribute; 2) HYPHY will not reconstruct root anc seq.
-                ///////////                 May be try to solve this problem later.
-                ////////////////////////////////////////////////////
-
-                // actually BEAST can parse root attribute
-                //
-                // if(nodeA.isRoot()){
-                //     if(DEBUG){ System.out.println("Root attribute - "+ nodeA.getAttribute(this.internalnode_nidname)); }
-                // }
-                // else{
 
                 String nodeAseq = getSequenceByNode(nodeA);
                 String nodeBseq = getSequenceByNode(nodeB);
@@ -157,7 +145,6 @@ public class TIPars{
                     scores[2] = scores1[2].intValue();
                     if(scores[2] < minQScore){
                         if(DEBUG) System.out.println("Score: "+scores[2]);
-                        // String tmp_nodePseq3 = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, scores1);
                         minQScore = scores[2];
                         selectedScores = scores; // the mutations(scores) at A-P, B-P and P-Q branch after taxa insertion.
                         nodePseq = tmp_nodePseq;
@@ -253,10 +240,6 @@ public class TIPars{
             System.out.println("ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2] + "\t" + selectedScores[2]*(ABQ_brlen[0]+ABQ_brlen[1])/(selectedScores[0]+selectedScores[1]));
 
         myBandBPbranch = new FlexibleNodeBranch<FlexibleNode, Double>((FlexibleNode)(mytree.getNode(selectedNodeBIndex)), new Double(afterscores[1])); // For EVALUATION
-        // myBandBPbranch.setNode(myTree.getNode(selectedNodeBIndex)); // For EVALUATION - must take the original tree node.
-        // myBandBPbranch.setBrlen(new Double(afterscores[1]));  // For EVALUATION - take update branch length(sub/site, not absolute mutations).
-
-        // System.out.println(node2edge.get((FlexibleNode)(mytree.getNode(selectedNodeBIndex))));
 
         if(printDisInfoOnScreen)
             System.out.println(""+selectedScores[0]+"\t"+selectedScores[1]+"\t"+original_B+"\t"+selectedScores[2]+"\t"+afterscores[0]+"\t"+afterscores[1]+"\t"+afterscores[2]+"\t"+selectedBnid+"\t"+selectedBatt+"\n");
@@ -279,9 +262,6 @@ public class TIPars{
         if(DEBUG) System.out.println("TaxonCount: "+mynewTree.getTaxonCount());
         mynewTree.toAdoptNodes((FlexibleNode)mynewTree.getRoot());
         if(DEBUG) System.out.println("TaxonCount after taxalist refresh: "+mynewTree.getTaxonCount());
-
-        // node2Sseq.put(selected_nodeP, nodePseq);
-        // node2Sseq.put(selected_nodeQ, nodeQseq);
 
         // mynewTree (MyFlexibleTree object) is a new copy of mytree (Tree object), and need to refresh hash table of node to seq
         // add the sequence to ancseq and taxaseq for running setupHashtableOfNode2Seq to refresh the hash table
@@ -357,58 +337,6 @@ public class TIPars{
 
         return d;
     }
-
-    public static double localEstimation2(int[] scores, double BPbranch) {
-        if (scores[0] + scores[1] == 0) {
-            return 0;
-        }
-        double d = BPbranch * ((double) scores[2])/((double) scores[1]);
-
-        return d;
-    }
-
-
-    /*
-    // Note: the n1 and n2 nodes are on the same tree. Not yet tested.
-    public static double[] calcDisBetweenTwoNodes(FlexibleTree t, FlexibleNode n1, FlexibleNode n2, double n1_dis, double n2_dis){
-	double node_dis = 0.0; // Number of node difference
-	double dis = 0.0;
-	if(n1 == n2){ dis = Math.abs(n1_dis-n2_dis); } // if n1 is same as n2
-	else{
-	    double[] dis0 = nodeAisAncestorOfNodeB(n1, n2);
-	    if(dis0[0] >= 0){ dis = dis0[0]-n2_dis+n1_dis; node_dis = dis0[1];} // if n1 is above n2;
-	    else{
-		dis0 = nodeAisAncestorOfNodeB(n2, n1);
-		if(dis0[0] >= 0){ dis = dis0[0]-n1_dis+n2_dis; node_dis = dis0[1];} // if n2 is above n1
-		else{  // if n1 and n2 not on the same pathway - use the path thr their common ancestor
-		    HashMap<FlexibleNode, double[]> listOf_n1_parents = new HashMap<FlexibleNode, double[]>(20);
-		    dis0[0] = n1.getLength();
-		    dis0[1] = 1;
-		    FlexibleNode k = n1.getParent();
-		    listOf_n1_parents.put(k, dis0);
-		    while(!k.isRoot()){
-			dis0[0] += k.getLength();
-			dis0[1] += 1;
-			k = k.getParent();
-			listOf_n1_parents.put(k, dis0);
-		    }
-		    double dis1 = n2.getLength();
-		    double dis1b = 1;
-		    k = n2.getParent();
-		    while(!listOf_n1_parents.containsKey(k)){
-			dis1 += k.getLength();
-			dis1b += 1;
-			k = k.getParent();
-		    }
-		    dis1 += ((double[])(listOf_n1_parents.get(k)))[0]; // branch-len difference
-		    dis = dis1-n1_dis-n2_dis; // branch-len difference that consider the n1_br-len and n2_br-len
-		    node_dis = dis1b + ((double[])(listOf_n1_parents.get(k)))[1]; // node# difference
-		}
-	    }
-	}
-	return new double[]{dis, node_dis};
-    }
-    */
 
 
     // If not found return -1, -99, else return branch length & number of node distance
@@ -604,7 +532,6 @@ public class TIPars{
             if(ai == ci && ai == bi){
                 continue;
                 // do nothing
-                //if(DEBUG) System.out.print("AAA");
             } else if(ai != ci && ci != bi && ai != bi){   // ATC
                 // no bias now. prefer to assign the character using the most closely seqence.
                 if (scores[2] <= scores[0] && scores[2] <= scores[1]) {
@@ -626,8 +553,6 @@ public class TIPars{
                 if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
                     continue;
                 }
-
-                //if(DEBUG) System.out.print("ATC");
             } else if(ai == bi && ci != bi){   // AAT
                 //p += ai;
                 p.setCharAt(i, ai);
@@ -636,8 +561,6 @@ public class TIPars{
                     continue;
                 }
                 scores[2]++;
-
-                // if(DEBUG) System.out.print("AAT");
             }
             else if(ai != bi && ci == bi){   // ATT
                 //p += bi;
@@ -646,10 +569,8 @@ public class TIPars{
                     continue;
                 }
                 scores[0]++;
-                //if(DEBUG) System.out.print("ATT");
             }
             else if(ai == ci && ci != bi){   // TAT
-                // p += ai;
                 p.setCharAt(i, ai);
 
                 if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
@@ -657,8 +578,6 @@ public class TIPars{
                 }
 
                 scores[1]++;
-
-                //if(DEBUG) System.out.print("TAT");
             }
             else if(DEBUG){ System.out.println("Unmatched ABQ type"); }
         }
@@ -775,15 +694,6 @@ public class TIPars{
 
             //System.out.println(query_align[0] + "\n\n\n" + query_align[1]);
 
-
-            // Read the tree from the nexus tree file. Note that nexus can also hold alignment, but not intended in this example.
-
-            /*
-              NexusImporter tni = new NexusImporter(new FileReader(intfn));
-              Tree[] trees = (Tree[])tni.importTrees(taxa_align);
-              trees[0] = cleanStringAttributeInTree(trees[0]);
-              TIPars myAdd = new TIPars(taxa_align, anc_align, trees[0], "nid");
-            */
 
             NewickImporter tni = new NewickImporter(new FileReader(intfn));
             Tree tree = tni.importTree(taxa_align);
