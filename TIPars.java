@@ -1,65 +1,78 @@
-import dr.app.tools.NexusExporter;
-import dr.evolution.sequence.Sequence;
-import dr.evolution.alignment.SimpleAlignment;
-import dr.evolution.alignment.SitePatterns;
-import dr.evolution.tree.FlexibleNode;
-import dr.evolution.tree.NodeRef;
-import dr.evolution.parsimony.FitchParsimony;
-import dr.evolution.tree.Tree;
-import dr.evolution.tree.FlexibleTree;
-import dr.evolution.io.NexusImporter;
-import dr.evolution.io.NewickImporter;
-import dr.evolution.io.FastaImporter;
-import dr.evolution.datatype.DataType;
-import dr.evolution.datatype.GeneralDataType;
-import dr.evolution.datatype.Nucleotides;
-import dr.evolution.util.Taxon;
-import dr.evolution.util.TaxonList;
-import dr.stats.DiscreteStatistics;
-import java.io.*;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+//import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
+import dr.app.tools.NexusExporter;
+import dr.evolution.io.NewickImporter;
+import dr.evolution.tree.FlexibleNode;
+import dr.evolution.tree.FlexibleTree;
+import dr.evolution.tree.Tree;
+import dr.evolution.util.Taxon;
 
+public class TIPars{ 
+	
+	private String OUTPUT_FOLDER;
+	private static boolean isMultiplePlacements = true;  ///is output multiple placements
+	private static boolean isFastaFile = true;   ///is fasta file
+	
+    private boolean DEBUG = false;              ///for debug
+    private boolean OUTPUT_PNODE = false;       ///is output P node sequence
 
-// Author: Tommy Tsan-Yuk LAM, Guangchuang YU
-// Description: Insert taxa into a reference phylogeny by parsimony.
-// last update 2019-01-04
-
-public class TIPars{
-    private boolean DEBUG = false;
-    private boolean OUTPUT_PSEQ = false;
-    private SimpleAlignment taxaseq = null;
-    private SimpleAlignment ancseq = null;
     private Tree mytree = null;
-    private String internalnode_nidname = "nid";
-    private HashMap <FlexibleNode, String> node2Sseq = null;
-    private HashMap <String, String> name2seq = null;
+    private static String internalnode_nidname = "label";
     private static HashMap <FlexibleNode, Integer> node2edge = new HashMap <FlexibleNode, Integer>();
-    private FlexibleNodeBranch<FlexibleNode, Double> myBandBPbranch = new FlexibleNodeBranch<FlexibleNode, Double>(); // for evaluation
-    private String model;
-    private String gap;
     private static String[] placements = null;
     private static int edge_number = 1;
-    private String OUTPUT_FOLDER;
-    public TIPars(){
 
+    private static ArrayList <String> stringSequencesList = new ArrayList<String>();  ///fasta: store taxaseq and ancseq, ordered follow the seqIdxMap
+    private static HashMap <String, Integer> seqIdxMap = new HashMap <String, Integer>();   ///sequence names (taxaseq and ancseq) map to their reading orders from file 
+    private static int sequence_character_length = -1;  ///alignment length
+    private static HashMap <FlexibleNode, String> node2seqName = new HashMap <FlexibleNode, String>(); ///tree_nodes map to their sequences name
+    
+    private static ArrayList <ConcurrentHashMap<Integer, Byte>> multationSequencesMap = new ArrayList<ConcurrentHashMap<Integer, Byte>>(); ///vcf: store taxaseq and ancseq, ordered follow the seqIdxMap
+    private static byte[] ref_sequence = new byte[100000];    ///reference sequence string
+    
+    private double minGlobalMemoryBranchScore = Double.MAX_VALUE;
+    private ArrayList<FlexibleNode> minGlobalMemoryBranchScoreNodeList = new ArrayList<FlexibleNode>();
+    
+    public static char[] alphabet_nt =  {'A', 'C', 'G', 'T', 'R', 'Y', 'M', 'K', 'S', 'W', 'H', 'B', 'V', 'D', 'N', '-'};
+    public static HashMap<Byte, HashSet<Byte>> _nucleotide_nomenclature = null;
+    private static double[][] _nucleotide_nomenclature_scoreTable = null;
+    private static HashMap<BitSet, Byte> _nucleotide_nomenclature_map2char = null;
+
+    private ReentrantLock lock = new ReentrantLock(); 
+    
+    public static double MinDoubleNumLimit = 10 * Double.MIN_VALUE;
+
+    public TIPars(){
     }
 
-    public TIPars(SimpleAlignment taxaseq, SimpleAlignment ancseq, Tree mytree, String internalnode_nidname, String model, String gap, String otype, String OUTPUT_FOLDER){
+    public TIPars(Tree mytree, String otype, String output_folder){
         this.mytree = mytree;
-        this.taxaseq = taxaseq;
-        this.ancseq = ancseq;
-        this.model = model;
-        this.gap = gap;
-        this.internalnode_nidname = internalnode_nidname;
-        this.OUTPUT_FOLDER = OUTPUT_FOLDER;
-        setupHashtableOfNode2Seq();
+        this.OUTPUT_FOLDER = output_folder;
+        setupHashtableOfnode2seqName();
         setupHashtableOfNode2edge(otype);
     }
 
     private void setupHashtableOfNode2edge(String otype) {
+    	node2edge.clear();
+    	edge_number = 1;
         if (otype.equals("placement")) {
-
             for (int i=0; i<mytree.getExternalNodeCount(); i++) {
                 Integer edge = new Integer(edge_number);
                 FlexibleNode node = (FlexibleNode) mytree.getExternalNode(i);
@@ -76,202 +89,923 @@ public class TIPars{
         }
     }
 
-    private void setupHashtableOfNode2Seq(){
-        node2Sseq = new HashMap <FlexibleNode, String>();
+    private void setupHashtableOfnode2seqName(){
+    	node2seqName.clear();
         for(int i=0; i<mytree.getInternalNodeCount(); i++){
             FlexibleNode n = (FlexibleNode)mytree.getInternalNode(i);
-            int t = ancseq.getTaxonIndex((String)(n.getAttribute(this.internalnode_nidname)));
-            if(t >= 0){
-                node2Sseq.put(n, ancseq.getAlignedSequenceString(t));
-            } else if(DEBUG){
-                System.out.println("inode-attribute="+(String)(n.getAttribute(this.internalnode_nidname))+" not found in alignment.");
+            String sequenceName = (String)(n.getAttribute(this.internalnode_nidname));
+            if(seqIdxMap.containsKey(sequenceName)) {
+            	node2seqName.put(n, sequenceName);
+            } else {
+                System.out.println("internalnode=" +  sequenceName + " not found in alignment.");
             }
         }
         for(int i=0; i<mytree.getExternalNodeCount(); i++){
             FlexibleNode n = (FlexibleNode)mytree.getExternalNode(i);
-            int t = taxaseq.getTaxonIndex(n.getTaxon().getId());
-            if(t >= 0){
-                node2Sseq.put(n, taxaseq.getAlignedSequenceString(t));
-            } else if(DEBUG){
-                System.out.println("enode-taxa="+n.getTaxon().getId()+" not found in alignment.");
-            }
-        }
-    }
-
-    public void setDebug(boolean d){
-        this.DEBUG = d;
-    }
-
-    public Tree addQuerySequence(String qname, String nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
-                                 String nidname, String attname, double[] ABQ_brlen, String otype, int ii){
-        // Travel all internal nodes for all possible nodeA-nodeB pairs
-        // HashMap <FlexibleNode, int[]> nodeB2score = new HashMap<FlexibleNode, int[]>();
-        // map the *nodeB* to the score array (nodeA score, nodeB score, nodeQ score)
-        // HashMap <FlexibleNode, String> nodeB2nodePseq = new HashMap<FlexibleNode, String>();
-        // map the *nodeB* to the nodeP sequence
-        String nodePseq = "";
-        int[] selectedScores = new int[3];
-        int minQScore = 9999999;
-        int selectedNodeBIndex = -1;// the index of selected nodeB (with min score) in the tree's internal .
-        String selectedBnid = "";
-        String selectedBatt = "";
-        for(int i=0; i<mytree.getNodeCount(); i++){
-            // We use this annotation:
-            //    nodeA
-            //       |
-            //     nodeP
-            //       | \
-            //       |  \
-            //    nodeB nodeQ
-
-            FlexibleNode nodeB = (FlexibleNode)mytree.getNode(i);
-
-            if(!nodeB.isRoot()){
-                // nodeA-nodeB pairs
-                FlexibleNode nodeA = (FlexibleNode)nodeB.getParent();
-
-                String nodeAseq = getSequenceByNode(nodeA);
-                String nodeBseq = getSequenceByNode(nodeB);
-                int[] scores = new int[3];
-                if(nodeAseq == null){
-                    if(DEBUG){ System.out.println("nodeAseq cannot find seq - "+nodeA.getAttribute(this.internalnode_nidname)); }
-                } else if(nodeBseq == null){
-                    if(DEBUG){ System.out.println("nodeBseq cannot find seq - "+nodeB.getAttribute(this.internalnode_nidname)); }
-                } else{
-                    Integer[] scores1 = new Integer[3];
-                    String tmp_nodePseq = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, scores1);
-                    scores[0] = scores1[0].intValue();
-                    scores[1] = scores1[1].intValue();
-                    scores[2] = scores1[2].intValue();
-                    if(scores[2] < minQScore){
-                        if(DEBUG) System.out.println("Score: "+scores[2]);
-                        minQScore = scores[2];
-                        selectedScores = scores; // the mutations(scores) at A-P, B-P and P-Q branch after taxa insertion.
-                        nodePseq = tmp_nodePseq;
-                        selectedNodeBIndex = i;
-                        selectedBnid = (String)nodeB.getAttribute(nidname);
-                        if (selectedBnid == null) {
-                            selectedBnid = nodeB.getTaxon().getId();
-                        }
-                        selectedBatt = (String)nodeB.getAttribute(attname);
-                    }
-                }
-                // }
-            }
-        }
-
-        if (DEBUG) System.out.println("selectedScores: " + selectedScores[0] + "\t" + selectedScores[1] + "\t" + selectedScores[2]);
-        // add the query node to the Tree copy.
-        double[] afterscores = {0.0, 0.0, 0.0};
-
-        MyFlexibleTree mynewTree = new MyFlexibleTree(mytree, true);
-        this.copyAttributeFromOneNodeToAnother((FlexibleNode)mytree.getRoot(), (FlexibleNode)mynewTree.getRoot());
-
-
-        mynewTree.beginTreeEdit();
-        FlexibleNode selected_nodeB = (FlexibleNode)mynewTree.getNode(selectedNodeBIndex);
-        double original_B = selected_nodeB.getLength();
-        FlexibleNode selected_nodeA = selected_nodeB.getParent();
-        Taxon qtaxon = new Taxon(qname);
-        FlexibleNode selected_nodeQ = new FlexibleNode(qtaxon);
-        // Q-P pendent length
-
-        double pqlen;
-        if (model.equals("JC69")) {
-            // JC69
-            double p = selectedScores[2]/((double)getAlignmentLength());
-            pqlen = JC69(p);
-        } else if (model.equals("K2P")) {
-            // K2P
-            pqlen = K2P(nodePseq, nodeQseq);
-        } else {
-            // local estimation
-            pqlen = localEstimation(selectedScores, original_B);
-        }
-        selected_nodeQ.setLength(pqlen);
-
-        FlexibleNode selected_nodeP = new FlexibleNode();
-        // set the attributes of newly added node.
-        selected_nodeP.setAttribute(this.internalnode_nidname, pid);
-        selected_nodeQ.setAttribute(this.internalnode_nidname, qname);
-
-        if(selectedScores[0] == 0){ // A-P is zero branch length, meaning that Q is inserted into A directly.
-            selected_nodeP = selected_nodeA;
-            selected_nodeA.addChild(selected_nodeQ);  
-            afterscores[0] = 0.0;
-            afterscores[1] = selected_nodeB.getLength();
-            afterscores[2] = selected_nodeQ.getLength();
-        } else if(selectedScores[1] == 0){  // P-B is zero branch length, meaning that Q is inserted into B directly.
-            if(selected_nodeB.isExternal()) { // If B is leaf, cannot add the Q directly there, must add P node.
-                double newNodeBLength = 0.0;
-                double newNodePLength = selected_nodeB.getLength();
-                selected_nodeP.setLength(newNodePLength);
-                selected_nodeB.setLength(newNodeBLength);
-                selected_nodeP.addChild(selected_nodeQ);
-                selected_nodeA.removeChild(selected_nodeB);
-                selected_nodeA.addChild(selected_nodeP);
-                selected_nodeP.addChild(selected_nodeB);
+            String sequenceName = n.getTaxon().getId();
+            if(seqIdxMap.containsKey(sequenceName)) {
+            	node2seqName.put(n, sequenceName);
             } else {
-                selected_nodeB.addChild(selected_nodeQ);
-            }
-            afterscores[0] = selected_nodeB.getLength();
-            afterscores[1] = 0.0;
-            afterscores[2] = selected_nodeQ.getLength();
-        } else {
-            double Pratio = selectedScores[0]/((double)(selectedScores[0]+selectedScores[1]));
-            double newNodeBLength = selected_nodeB.getLength()*(1.0-Pratio);
-            double newNodePLength = selected_nodeB.getLength()*Pratio;
-            selected_nodeP.setLength(newNodePLength);
-            selected_nodeB.setLength(newNodeBLength);
-            selected_nodeP.addChild(selected_nodeQ);
-            selected_nodeA.removeChild(selected_nodeB);
-            selected_nodeA.addChild(selected_nodeP);
-            selected_nodeP.addChild(selected_nodeB);
-            afterscores[0] = selected_nodeP.getLength();
-            afterscores[1] = selected_nodeB.getLength();
-            afterscores[2] = selected_nodeQ.getLength();
-        }
-        ABQ_brlen[0] = afterscores[0];
-        ABQ_brlen[1] = afterscores[1];
-        ABQ_brlen[2] = afterscores[2];
-
-
-        if (DEBUG)
-            System.out.println("ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2] + "\t" + selectedScores[2]*(ABQ_brlen[0]+ABQ_brlen[1])/(selectedScores[0]+selectedScores[1]));
-
-        myBandBPbranch = new FlexibleNodeBranch<FlexibleNode, Double>((FlexibleNode)(mytree.getNode(selectedNodeBIndex)), new Double(afterscores[1])); // For EVALUATION
-
-        if(printDisInfoOnScreen)
-            System.out.println(""+selectedScores[0]+"\t"+selectedScores[1]+"\t"+original_B+"\t"+selectedScores[2]+"\t"+afterscores[0]+"\t"+afterscores[1]+"\t"+afterscores[2]+"\t"+selectedBnid+"\t"+selectedBatt+"\n");
-
-        System.out.println("\nquery sequence: " + qname);
-        System.out.println("insert to edge: " + (String)selected_nodeA.getAttribute(nidname) + "-" + selectedBnid);
-        System.out.println("distal_length: " + afterscores[0]);
-        System.out.println("pendant_length: " + afterscores[2] + "\n");
-
-
-        if (otype.equals("placement")) {
-            String placeInfo = "\t{\"p\":[" + node2edge.get((FlexibleNode) mytree.getNode(selectedNodeBIndex)) + ", " + afterscores[0]  + ", " + afterscores[2] +  "]," + "\"n\":[\"" + qname + "\"]}";
-            placements[ii] = placeInfo;
-            if (otype.equals("placement")) {
-                return mytree;
+                System.out.println("externalnode=" + sequenceName +" not found in alignment.");
             }
         }
-
-        mynewTree.endTreeEdit();
-        if(DEBUG) System.out.println("TaxonCount: "+mynewTree.getTaxonCount());
-        mynewTree.toAdoptNodes((FlexibleNode)mynewTree.getRoot());
-        if(DEBUG) System.out.println("TaxonCount after taxalist refresh: "+mynewTree.getTaxonCount());
-
-        // mynewTree (MyFlexibleTree object) is a new copy of mytree (Tree object), and need to refresh hash table of node to seq
-        // add the sequence to ancseq and taxaseq for running setupHashtableOfNode2Seq to refresh the hash table
-        ancseq.addSequence(new  dr.evolution.sequence.Sequence(new Taxon(pid), nodePseq));
-        taxaseq.addSequence(new dr.evolution.sequence.Sequence(new Taxon(qname), nodeQseq));
-
-        if (OUTPUT_PSEQ) writeFASTA(pid, nodePseq, OUTPUT_FOLDER);
-        return mynewTree;
+    }
+  
+    public HashMap <String, FlexibleNode> setupHashtableOfseqName2node(Tree tree){
+    	HashMap <String, FlexibleNode> mySeqName2node = new HashMap <String, FlexibleNode>();
+        for(int i=0; i<tree.getInternalNodeCount(); i++){
+            FlexibleNode n = (FlexibleNode)tree.getInternalNode(i);
+            String sequenceName = (String)(n.getAttribute(this.internalnode_nidname));
+            mySeqName2node.put(sequenceName, n);
+        }
+        for(int i=0; i<tree.getExternalNodeCount(); i++){
+            FlexibleNode n = (FlexibleNode)tree.getExternalNode(i);
+            String sequenceName = n.getTaxon().getId();
+            mySeqName2node.put(sequenceName, n);
+        }
+        return mySeqName2node;
     }
 
+	//Interface API
+    public Tree addQuerySequence(String qname, ConcurrentHashMap<Integer, Byte> nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
+           double[] ABQ_brlen, String otype, int ii){
+    	return addQuerySequence_global(qname, nodeQseq, qid, pid, printDisInfoOnScreen, ABQ_brlen, otype, ii);
+    }
+    
+    public Tree addQuerySequence(String qname, String nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
+            double[] ABQ_brlen, String otype, int ii){
+    	return addQuerySequence_global(qname, nodeQseq, qid, pid, printDisInfoOnScreen, ABQ_brlen, otype, ii);
+    }   
+    
+    public Tree addQuerySequence_global(String qname, ConcurrentHashMap<Integer, Byte> nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
+            double[] ABQ_brlen, String otype, int ii){
+        // Travel all internal nodes for all possible nodeA-nodeB pairs
+    	 
+    	minGlobalMemoryBranchScore = Double.MAX_VALUE;   
+    	minGlobalMemoryBranchScoreNodeList.clear();
+    	///if parallel computes branchscore is bigger than minGlobalMemoryBranchScore, the calculation will stop.
+        ArrayList<Integer> nodeIdxAndScoreList = new ArrayList<Integer>(mytree.getNodeCount());
+        ////initialize the nodeIdxAndScoreList to store nodeIdx
+        for(int i=0; i<mytree.getNodeCount(); ++i)
+        {
+        	nodeIdxAndScoreList.add(i);
+        }
+
+        ////parallel to compute branchScore for every branch
+        nodeIdxAndScoreList.parallelStream()
+        .forEach(nodeIdx ->
+                 {
+                     double score = computeBranchScore(nodeIdx, nodeQseq, qname);
+                 }
+                );
+        
+       ArrayList<FlexibleNode> selectedNodeList = minGlobalMemoryBranchScoreNodeList;
+      
+       ////try to remove ambiguous results
+      selectedNodeList = reduceAmbiguousBranch(selectedNodeList, isMultiplePlacements);
+      
+      if(DEBUG)
+    	  System.out.println("minQScore: " + minGlobalMemoryBranchScore + ", selectedNodeList:" + selectedNodeList.size());
+      
+      MyFlexibleTree best_mynewTree = null;
+      String placementStrings = "";
+      for(int k=0; k < selectedNodeList.size(); ++k)
+      {
+    	  FlexibleNode selectedNode = selectedNodeList.get(k);  
+    	  int selectedNodeBIndex = selectedNode.getNumber();
+   		  ConcurrentHashMap<Integer, Byte> nodeAseq = getVariantSequenceByNode((FlexibleNode)selectedNode.getParent());
+   		  ConcurrentHashMap<Integer, Byte> nodeBseq = getVariantSequenceByNode(selectedNode);
+
+   		  Double[] selectedScores = new Double[3];
+   		  selectedScores[0] = (double) get_num_leaves(selectedNode.getParent());
+   		  selectedScores[1] = (double) get_num_leaves(selectedNode);
+   		  ConcurrentHashMap<Integer, Byte> nodePseq = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, selectedScores);
+   		
+   		  String selectedBnid = (String)selectedNode.getAttribute(internalnode_nidname);
+
+           if (selectedBnid == null) {
+               selectedBnid = selectedNode.getTaxon().getId();
+           }
+
+           String selectAName =  (String)selectedNode.getParent().getAttribute(internalnode_nidname);
+           
+           // Q-P pendent length local estimation
+           double pqlen = 0.0;
+           if(selectedScores[2] <= MinDoubleNumLimit) pqlen = 0.0;
+           else ///selectedScores[2] > Double.MIN_VALUE
+           {
+           	double scoreAB = computeNodeScore(nodeAseq, nodeBseq);
+           	FlexibleNode myNodeB = selectedNode;
+           	FlexibleNode myNodeA = myNodeB.getParent();
+           	while((scoreAB <= MinDoubleNumLimit || myNodeB.getLength() <= MinDoubleNumLimit) && !myNodeA.isRoot())
+           	{
+           		myNodeB = myNodeA;
+           		myNodeA = myNodeB.getParent();
+           		scoreAB = computeNodeScore(getVariantSequenceByNode(myNodeA), getVariantSequenceByNode(myNodeB));
+           	}
+           	if(scoreAB > MinDoubleNumLimit && myNodeB.getLength() > MinDoubleNumLimit)
+           		pqlen = localEstimation(selectedScores[2], scoreAB, myNodeB.getLength());
+           	else
+           	{
+           		double p = selectedScores[2]/((double)getAlignmentLength());
+                   pqlen = JC69(p);
+           	}
+           }
+           
+           double original_branchAB = selectedNode.getLength();
+           if(selectedScores[1] <= MinDoubleNumLimit){
+           	ABQ_brlen[0] = original_branchAB;
+           	ABQ_brlen[1] = 0.0;
+           	ABQ_brlen[2] = pqlen;
+           }
+           else if(selectedScores[0] <= MinDoubleNumLimit)
+           {
+           	ABQ_brlen[0] = 0.0;
+               ABQ_brlen[1] = original_branchAB;
+               ABQ_brlen[2] = pqlen;
+           }
+           else {
+           	double Pratio = selectedScores[0]/((double)(selectedScores[0]+selectedScores[1]));
+           	double newNodePLength = original_branchAB*Pratio;
+               double newNodeBLength = original_branchAB*(1.0-Pratio);
+               
+           	ABQ_brlen[0] = newNodePLength;
+               ABQ_brlen[1] = newNodeBLength;
+               ABQ_brlen[2] = pqlen;
+           }
+
+           if(printDisInfoOnScreen)
+           {
+           	if(k == 0)
+           		System.out.println(qname + "\t" + "*" +  selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2]);
+           	else
+           		System.out.println(qname + "\t" +  selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2]);
+           }
+           
+           if (otype.equals("placement")) {
+         	  placementStrings += "[" + node2edge.get((FlexibleNode) mytree.getNode(selectedNodeBIndex)) + ", " + ABQ_brlen[0]  + ", " + ABQ_brlen[2] +  "]";
+         	  if(k < selectedNodeList.size()-1) placementStrings += ",\n\t";
+         	  else placementStrings += "\n\t";
+           }
+           
+           if(k > 0) continue;
+           
+           // add the query node to the Tree copy.
+           MyFlexibleTree mynewTree = new MyFlexibleTree(mytree, true);
+           this.copyAttributeFromOneNodeToAnother((FlexibleNode)mytree.getRoot(), (FlexibleNode)mynewTree.getRoot());
+           
+           mynewTree.beginTreeEdit();
+           FlexibleNode selected_nodeB = (FlexibleNode)mynewTree.getNode(selectedNodeBIndex);
+
+           FlexibleNode selected_nodeA = selected_nodeB.getParent();
+           Taxon qtaxon = new Taxon(qname);
+           FlexibleNode selected_nodeQ = new FlexibleNode(qtaxon);
+           selected_nodeQ.setLength(pqlen);
+
+           FlexibleNode selected_nodeP = new FlexibleNode();
+           // set the attributes of newly added node.
+           selected_nodeP.setAttribute(internalnode_nidname, pid);
+           selected_nodeQ.setAttribute(internalnode_nidname, qname);
+           if(selectedScores[1] <= MinDoubleNumLimit){  // P-B is zero branch length, meaning that Q is inserted into B directly.
+           	if(selected_nodeB.isExternal()) { // If B is leaf, cannot add the Q directly there, must add P node.
+                   selected_nodeP.setLength(original_branchAB);
+                   selected_nodeP.addChild(selected_nodeQ);
+                   selected_nodeA.addChild(selected_nodeP);
+                   
+                   selected_nodeB.setLength(0.0);
+                   selected_nodeA.removeChild(selected_nodeB);
+                   selected_nodeP.addChild(selected_nodeB);
+               } 
+               else {
+                   selected_nodeB.addChild(selected_nodeQ);
+               }
+           }
+           else if(selectedScores[0] <= MinDoubleNumLimit){ // A-P is zero branch length, meaning that Q is inserted into A directly.
+               selected_nodeP = selected_nodeA;
+               selected_nodeA.addChild(selected_nodeQ);  
+           }
+           else {
+               selected_nodeP.setLength(ABQ_brlen[0]);
+               selected_nodeB.setLength(ABQ_brlen[1]);
+               
+               selected_nodeP.addChild(selected_nodeQ);
+               selected_nodeA.addChild(selected_nodeP);
+               
+               selected_nodeA.removeChild(selected_nodeB);
+               selected_nodeP.addChild(selected_nodeB);
+           }
+           
+           mynewTree.endTreeEdit();
+           if(!seqIdxMap.containsKey(qname))
+           {
+           	seqIdxMap.put(qname, multationSequencesMap.size());
+           	multationSequencesMap.add(nodeQseq);
+           }
+           if(!seqIdxMap.containsKey(pid))
+           {
+           	seqIdxMap.put(pid, multationSequencesMap.size());
+           	multationSequencesMap.add(nodePseq);
+           }
+           if (OUTPUT_PNODE)
+           {
+           	writeMutation(pid, nodePseq, OUTPUT_FOLDER);
+           }
+           
+           mynewTree.toAdoptNodes((FlexibleNode)mynewTree.getRoot());
+           best_mynewTree = mynewTree;
+             
+       }
+       if (otype.equals("placement")) {
+    	  String placeInfo = "\t{\"p\":[\n\t" +  placementStrings +  "],\n\t" + "\"n\":[\"" + qname + "\"]}";
+          placements[ii] = placeInfo;
+          return mytree;
+       }
+       return best_mynewTree;
+    }
+
+    
+    public Tree addQuerySequence_global(String qname, String nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
+           double[] ABQ_brlen, String otype, int ii){
+        // Travel all internal nodes for all possible nodeA-nodeB pairs
+    	
+    	minGlobalMemoryBranchScore = Double.MAX_VALUE;   
+    	minGlobalMemoryBranchScoreNodeList.clear();
+    	///if parallel computes branchscore is bigger than minGlobalMemoryBranchScore, the calculation will stop.
+        ArrayList<Integer> nodeIdxAndScoreList = new ArrayList<Integer>(mytree.getNodeCount());
+        ////initialize the nodeIdxAndScoreList to store nodeIdx
+        for(int i=0; i<mytree.getNodeCount(); ++i)
+        {
+        	nodeIdxAndScoreList.add(i);
+        }
+
+        ////parallel to compute branchScore for every branch
+        nodeIdxAndScoreList.parallelStream()
+        .forEach(nodeIdx ->
+                 {
+                     double score = computeBranchScore(nodeIdx, nodeQseq, qname);
+                 }
+                );
+
+       ArrayList<FlexibleNode> selectedNodeList = minGlobalMemoryBranchScoreNodeList;
+       if(DEBUG)
+     		System.out.println("minQScore: " + minGlobalMemoryBranchScore + ", selectedNodeList:" + selectedNodeList.size());
+
+       ////try to remove ambiguous results
+      selectedNodeList = reduceAmbiguousBranch(selectedNodeList, isMultiplePlacements);
+
+      MyFlexibleTree best_mynewTree = null;
+      
+      String placementStrings = "";
+      for(int k=0; k < selectedNodeList.size(); ++k)
+      {
+    	  FlexibleNode selectedNode = selectedNodeList.get(k); 
+			
+  		  int selectedNodeBIndex = selectedNode.getNumber();
+  		  String nodeAseq = getStringSequenceByNode((FlexibleNode)selectedNode.getParent());
+  		  String nodeBseq = getStringSequenceByNode(selectedNode);
+
+  		  Double[] selectedScores = new Double[3];
+  		  selectedScores[0] = (double) get_num_leaves(selectedNode.getParent());
+  		  selectedScores[1] = (double) get_num_leaves(selectedNode);
+  		  String nodePseq = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, selectedScores);
+  		
+  		  String selectedBnid = (String)selectedNode.getAttribute(internalnode_nidname);
+          if (selectedBnid == null) {
+              selectedBnid = selectedNode.getTaxon().getId();
+          }
+          String selectAName =  (String)selectedNode.getParent().getAttribute(internalnode_nidname);
+
+          // Q-P pendent length local estimation
+          double pqlen = 0.0;
+          if(selectedScores[2] <= MinDoubleNumLimit) pqlen = 0.0;
+          else ///selectedScores[2] > Double.MIN_VALUE
+          {
+        	double scoreAB = computeNodeScore(nodeAseq, nodeBseq);
+        	FlexibleNode myNodeB = selectedNode;
+        	FlexibleNode myNodeA = myNodeB.getParent();
+        	while((scoreAB <= MinDoubleNumLimit || myNodeB.getLength() <= MinDoubleNumLimit) && !myNodeA.isRoot())
+        	{
+        		myNodeB = myNodeA;
+        		myNodeA = myNodeB.getParent();
+        		scoreAB = computeNodeScore(getStringSequenceByNode(myNodeA), getStringSequenceByNode(myNodeB));
+        	}
+        	if(scoreAB > MinDoubleNumLimit && myNodeB.getLength() > MinDoubleNumLimit)
+        		pqlen = localEstimation(selectedScores[2], scoreAB, myNodeB.getLength());
+        	else
+        	{
+        		double p = selectedScores[2]/((double)getAlignmentLength());
+                pqlen = JC69(p);
+        	}
+          }
+        
+          double original_branchAB = selectedNode.getLength();
+          if(selectedScores[1] <= MinDoubleNumLimit){
+        	ABQ_brlen[0] = original_branchAB;
+        	ABQ_brlen[1] = 0.0;
+        	ABQ_brlen[2] = pqlen;
+          }
+          else if(selectedScores[0] <= MinDoubleNumLimit)
+          {
+        	ABQ_brlen[0] = 0.0;
+            ABQ_brlen[1] = original_branchAB;
+            ABQ_brlen[2] = pqlen;
+          }
+          else {
+        	double Pratio = selectedScores[0]/((double)(selectedScores[0]+selectedScores[1]));
+        	double newNodePLength = original_branchAB*Pratio;
+            double newNodeBLength = original_branchAB*(1.0-Pratio);
+            
+        	ABQ_brlen[0] = newNodePLength;
+            ABQ_brlen[1] = newNodeBLength;
+            ABQ_brlen[2] = pqlen;
+          }
+
+          if(printDisInfoOnScreen)
+          {
+        	if(k == 0)
+        		System.out.println(qname + "\t" + "*" +  selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2]);
+        	else
+        		System.out.println(qname + "\t" +  selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2]);
+          }
+          
+          if (otype.equals("placement")) {
+        	  placementStrings += "[" + node2edge.get((FlexibleNode) mytree.getNode(selectedNodeBIndex)) + ", " + ABQ_brlen[0]  + ", " + ABQ_brlen[2] +  "]";
+        	  if(k < selectedNodeList.size()-1) placementStrings += ",\n\t";
+        	  else placementStrings += "\n\t";
+          }
+
+          if(k > 0) continue;
+        
+          // add the query node to the Tree copy.
+          MyFlexibleTree mynewTree = new MyFlexibleTree(mytree, true);
+          this.copyAttributeFromOneNodeToAnother((FlexibleNode)mytree.getRoot(), (FlexibleNode)mynewTree.getRoot());
+
+          mynewTree.beginTreeEdit();
+          FlexibleNode selected_nodeB = (FlexibleNode)mynewTree.getNode(selectedNodeBIndex);
+          FlexibleNode selected_nodeA = selected_nodeB.getParent();
+          Taxon qtaxon = new Taxon(qname);
+          FlexibleNode selected_nodeQ = new FlexibleNode(qtaxon);
+          selected_nodeQ.setLength(pqlen);
+
+          FlexibleNode selected_nodeP = new FlexibleNode();
+          // set the attributes of newly added node.
+          selected_nodeP.setAttribute(this.internalnode_nidname, pid);
+          selected_nodeQ.setAttribute(this.internalnode_nidname, qname);
+          double original_scoreAB = computeNodeScore(nodeAseq, nodeBseq);
+          if(selectedScores[1] <= MinDoubleNumLimit){  // P-B is zero branch length, meaning that Q is inserted into B directly.
+          	if(selected_nodeB.isExternal()) { // If B is leaf, cannot add the Q directly there, must add P node.
+                  selected_nodeP.setLength(original_branchAB);
+                  selected_nodeP.addChild(selected_nodeQ);
+                  selected_nodeA.addChild(selected_nodeP);
+                  
+                  selected_nodeB.setLength(0.0);
+                  selected_nodeA.removeChild(selected_nodeB);
+                  selected_nodeP.addChild(selected_nodeB);
+              } 
+              else {
+                  selected_nodeB.addChild(selected_nodeQ);
+              }
+          }
+          else if(selectedScores[0] <= MinDoubleNumLimit){ // A-P is zero branch length, meaning that Q is inserted into A directly.
+              selected_nodeP = selected_nodeA;
+              selected_nodeA.addChild(selected_nodeQ);  
+          }
+          else {
+          	selected_nodeP.setLength(ABQ_brlen[0]);
+              selected_nodeB.setLength(ABQ_brlen[1]);
+              
+              selected_nodeP.addChild(selected_nodeQ);
+              selected_nodeA.addChild(selected_nodeP);
+              
+              selected_nodeA.removeChild(selected_nodeB);
+              selected_nodeP.addChild(selected_nodeB);
+          }
+          mynewTree.endTreeEdit();
+          if(!seqIdxMap.containsKey(qname))
+          {
+          	seqIdxMap.put(qname, stringSequencesList.size());
+          	stringSequencesList.add(nodeQseq);
+          }
+          if(!seqIdxMap.containsKey(pid))
+          {
+          	seqIdxMap.put(pid, stringSequencesList.size());
+          	stringSequencesList.add(nodePseq);
+          }
+          if (OUTPUT_PNODE)
+          {
+          	writeFASTA(pid, nodePseq, OUTPUT_FOLDER);
+          }
+          mynewTree.toAdoptNodes((FlexibleNode)mynewTree.getRoot());
+          best_mynewTree = mynewTree;  
+       }
+       if (otype.equals("placement")) {
+    	  String placeInfo = "\t{\"p\":[\n\t" +  placementStrings +  "],\n\t" + "\"n\":[\"" + qname + "\"]}";
+          placements[ii] = placeInfo;
+          return mytree;
+       }
+       return best_mynewTree;
+    }
+    
+    public double computeBranchScore(int nodeIdx, String nodeQseq, String qname)
+    {
+        FlexibleNode nodeB = (FlexibleNode)mytree.getNode(nodeIdx);
+        return computeBranchScore(nodeB, nodeQseq, qname);
+    }
+
+    public double computeBranchScore(FlexibleNode nodeB, String nodeQseq, String qname)
+    {    	
+    	// We use this annotation:
+        //    nodeA
+        //       |
+        //     nodeP
+        //       | \
+        //       |  \
+        //    nodeB nodeQ
+
+        if(nodeB.isRoot()) return Double.MAX_VALUE;
+        		
+        // nodeA-nodeB pairs
+        FlexibleNode nodeA = (FlexibleNode)nodeB.getParent();
+        if(nodeA == null)
+        {
+        	System.out.println("nodeA is null, and its nodeB is " + node2seqName.get(nodeB)); 
+        }
+        	
+        String nodeAseq = getStringSequenceByNode(nodeA);
+        String nodeBseq = getStringSequenceByNode(nodeB);
+          
+        if(nodeAseq == null){
+        	if(DEBUG)  System.out.println("nodeAseq cannot find seq - " + node2seqName.get(nodeA)); 
+        	
+        } 
+        else if(nodeBseq == null){
+        	if(DEBUG)  System.out.println("nodeBseq cannot find seq - " + node2seqName.get(nodeB));
+        } 
+
+        double score = 0;
+        for(int i=0; i < getAlignmentLength(); i++){
+        	char a_i = nodeAseq.charAt(i);  
+        	char b_i = nodeBseq.charAt(i);  
+        	char c_i = nodeQseq.charAt(i); 
+        	
+        	double score_ab = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)b_i];
+        	double score_ac = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)c_i];
+        	double score_bc = _nucleotide_nomenclature_scoreTable[(byte)b_i][(byte)c_i];
+        	
+            if(a_i != b_i && a_i != c_i && b_i != c_i){   // ATC
+                score += (score_ac + score_bc) / 2;
+            } 
+            else if(a_i == b_i && b_i != c_i){   // AAT
+            	score += score_bc;
+            }
+            
+            if(score - minGlobalMemoryBranchScore > MinDoubleNumLimit) return score;
+        }
+
+        lock.lock();
+        if(minGlobalMemoryBranchScore - score > MinDoubleNumLimit)
+        {
+        	minGlobalMemoryBranchScore = score;
+        	minGlobalMemoryBranchScoreNodeList.clear();
+        	minGlobalMemoryBranchScoreNodeList.add(nodeB);
+        }
+        else if (Math.abs(minGlobalMemoryBranchScore - score) <= MinDoubleNumLimit)
+        {
+        	minGlobalMemoryBranchScoreNodeList.add(nodeB);
+        }
+        lock.unlock();
+
+    	return score;
+    }
+    
+    public double computeBranchScore(String nodeAseq, String nodeBseq, String nodeQseq)
+    {    	
+        double score = 0;
+        for(int i=0; i < getAlignmentLength(); i++){
+        	char a_i = nodeAseq.charAt(i);  
+        	char b_i = nodeBseq.charAt(i);  
+        	char c_i = nodeQseq.charAt(i); 
+        	
+        	double score_ab = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)b_i];
+        	double score_ac = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)c_i];
+        	double score_bc = _nucleotide_nomenclature_scoreTable[(byte)b_i][(byte)c_i];
+        	
+            if(a_i != b_i && a_i != c_i && b_i != c_i){   // ATC
+                score += (score_ac + score_bc) / 2;
+            } 
+            else if(a_i == b_i && b_i != c_i){   // AAT
+            	score += score_bc;
+            }
+        }
+        
+    	return score;
+    }
+    
+    public String getStringAndScoreFromNodeABQSeq(String aSeq, String bSeq, String cSeq, Double[] scores){
+        scores[0] = 0.0; scores[1] = 0.0; scores[2] = 0.0;
+        StringBuilder pSeq = new StringBuilder(aSeq);
+
+        //scores[3] is the difference between A and B
+        for(int i = 0; i < getAlignmentLength(); i++){
+        	char a_i = aSeq.charAt(i);  
+        	char b_i = bSeq.charAt(i);  
+        	char c_i = cSeq.charAt(i); 
+        	
+        	 double score_ac = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)c_i];
+             double score_bc = _nucleotide_nomenclature_scoreTable[(byte)b_i][(byte)c_i];
+             double score_ab = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)b_i];
+             
+        	if(a_i == b_i && a_i == c_i){
+                continue;
+                // do nothing
+            } else if(a_i != b_i && a_i != c_i && b_i != c_i){   // ATC
+                scores[2] += (score_ac + score_bc) / 2.0; 
+                if(score_ac > score_bc) pSeq.setCharAt(i, b_i);
+            } 
+            else if(a_i == b_i && b_i != c_i){   // AAT
+            	scores[2] += score_bc;
+            	pSeq.setCharAt(i, a_i);
+            }
+            else if(a_i != b_i && b_i == c_i){   // ATT
+            	scores[0] += score_ab;
+            	pSeq.setCharAt(i, b_i);
+            }
+            else if(a_i == c_i &&  b_i != c_i){   // TAT
+            	scores[1] += score_ab;
+            	pSeq.setCharAt(i, a_i);
+            }
+            else if(DEBUG){ System.out.println("Unmatched ABQ type"); }
+        }
+        return pSeq.toString();
+    }
+    
+    public double computeBranchScore(int nodeIdx, ConcurrentHashMap<Integer, Byte> nodeQseq, String qname)
+    {
+        FlexibleNode nodeB = (FlexibleNode)mytree.getNode(nodeIdx);
+        return computeBranchScore(nodeB, nodeQseq, qname);
+    }
+    
+    public double computeBranchScore(FlexibleNode nodeB, ConcurrentHashMap<Integer, Byte> nodeQseq, String qname)
+    {    	
+    	// We use this annotation:
+        //    nodeA
+        //       |
+        //     nodeP
+        //       | \
+        //       |  \
+        //    nodeB nodeQ
+
+        if(nodeB.isRoot()) return Double.MAX_VALUE;
+        		
+        // nodeA-nodeB pairs
+        FlexibleNode nodeA = (FlexibleNode)nodeB.getParent();
+        ConcurrentHashMap<Integer, Byte> nodeAseq = getVariantSequenceByNode(nodeA);
+        ConcurrentHashMap<Integer, Byte> nodeBseq = getVariantSequenceByNode(nodeB);
+
+        double score = 0;
+        HashSet<Integer> mergeIdxSet = new HashSet<Integer>(nodeQseq.keySet());
+        mergeIdxSet.addAll(nodeAseq.keySet());
+        mergeIdxSet.addAll(nodeBseq.keySet());
+        
+        for(Integer key : mergeIdxSet)
+        {
+        	byte a = nodeAseq.containsKey(key) ? nodeAseq.get(key) : ref_sequence[key]; 
+        	byte b = nodeBseq.containsKey(key) ? nodeBseq.get(key) : ref_sequence[key]; 
+        	byte c = nodeQseq.containsKey(key) ? nodeQseq.get(key) : ref_sequence[key]; 
+        	
+            if(a != b && a != c && b != c){   // ATC
+                score += (_nucleotide_nomenclature_scoreTable[a][c] + _nucleotide_nomenclature_scoreTable[b][c]) / 2;
+            } 
+            else if(a == b && b != c){   // AAT
+            	score += _nucleotide_nomenclature_scoreTable[b][c];
+            }
+            
+            if(score - minGlobalMemoryBranchScore > MinDoubleNumLimit) return score;
+        }
+
+        lock.lock();
+        if(minGlobalMemoryBranchScore - score > MinDoubleNumLimit)
+        {
+        	minGlobalMemoryBranchScore = score;
+        	minGlobalMemoryBranchScoreNodeList.clear();
+        	minGlobalMemoryBranchScoreNodeList.add(nodeB);
+        }
+        else if (Math.abs(minGlobalMemoryBranchScore - score) <= MinDoubleNumLimit)
+        {
+        	minGlobalMemoryBranchScoreNodeList.add(nodeB);
+        }
+        lock.unlock();
+
+    	return score;
+    }
+
+    public double computeBranchScore(ConcurrentHashMap<Integer, Byte> nodeAseq, ConcurrentHashMap<Integer, Byte> nodeBseq, ConcurrentHashMap<Integer, Byte> nodeQseq)
+    {    	
+    	 double score = 0;
+         HashSet<Integer> mergeIdxSet = new HashSet<Integer>(nodeQseq.keySet());
+         mergeIdxSet.addAll(nodeAseq.keySet());
+         mergeIdxSet.addAll(nodeBseq.keySet());
+         
+         for(Integer key : mergeIdxSet)
+         {
+         	byte a = nodeAseq.containsKey(key) ? nodeAseq.get(key) : ref_sequence[key]; 
+         	byte b = nodeBseq.containsKey(key) ? nodeBseq.get(key) : ref_sequence[key]; 
+         	byte c = nodeQseq.containsKey(key) ? nodeQseq.get(key) : ref_sequence[key]; 
+
+         	double score_ab = _nucleotide_nomenclature_scoreTable[a][b];
+         	double score_ac = _nucleotide_nomenclature_scoreTable[a][c];
+         	double score_bc = _nucleotide_nomenclature_scoreTable[b][c];
+         	
+             if(a != b && a != c && b != c){   // ATC
+                 score += (score_ac + score_bc) / 2;
+             } 
+             else if(a == b && b != c){   // AAT
+             	score += score_bc;
+             }
+         }
+         return score;
+    }
+    
+    public ConcurrentHashMap<Integer, Byte> getStringAndScoreFromNodeABQSeq(ConcurrentHashMap<Integer, Byte> nodeAseq, ConcurrentHashMap<Integer, Byte> nodeBseq, ConcurrentHashMap<Integer, Byte> nodeQseq, Double[] scores){
+        scores[0] = 0.0; scores[1] = 0.0; scores[2] = 0.0;
+        ConcurrentHashMap<Integer, Byte> pSeq = new ConcurrentHashMap<Integer, Byte>();
+
+        HashSet<Integer> mergeIdxSet = new HashSet<Integer>(nodeQseq.keySet());
+        mergeIdxSet.addAll(nodeAseq.keySet());
+        mergeIdxSet.addAll(nodeBseq.keySet());
+        
+        for(Integer key : mergeIdxSet)
+        {
+        	byte a = nodeAseq.containsKey(key) ? nodeAseq.get(key) : ref_sequence[key]; 
+        	byte b = nodeBseq.containsKey(key) ? nodeBseq.get(key) : ref_sequence[key]; 
+        	byte c = nodeQseq.containsKey(key) ? nodeQseq.get(key) : ref_sequence[key]; 
+
+        	double score_ab = _nucleotide_nomenclature_scoreTable[(byte)a][(byte)b];
+        	double score_ac = _nucleotide_nomenclature_scoreTable[(byte)a][(byte)c];
+        	double score_bc = _nucleotide_nomenclature_scoreTable[(byte)b][(byte)c];
+        	
+        	byte placeCharacter = a; ///default place a
+        	if(a == b && a == c)
+        	{
+        		continue;
+        	}
+        	else if(a != b && a != c && b != c){   // ATC
+        		scores[2] += (score_ac + score_bc) / 2.0; 
+        		if(score_ac > score_bc)  placeCharacter = b;
+            } 
+            else if(a == b && b != c){   // AAT
+            	scores[2] += score_bc;
+            }
+            else if(a != b && b == c){   // ATT
+            	scores[0] += score_ab;
+            	placeCharacter = b;
+            }
+            else if(a == c &&  b != c){   // TAT
+            	scores[1] += score_ab;
+            }
+        	
+        	if(placeCharacter != ref_sequence[key])
+        	{
+        		pSeq.put(key, placeCharacter);
+        	}
+        }
+
+        return pSeq;
+    }
+ 
+    public double computeNodeScore(FlexibleNode nodeB, String nodeQseq)
+    {
+        if(nodeB.isRoot()) return Double.MAX_VALUE;
+
+        String nodeBseq = getStringSequenceByNode(nodeB);
+        double scoreNode = 0;
+        for(int i= 0; i < getAlignmentLength(); i++){
+        	char a_i = nodeBseq.charAt(i);  
+        	char b_i = nodeQseq.charAt(i);  
+        	scoreNode += _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)b_i];
+        }
+
+        return scoreNode; 
+    }
+    
+    public double computeNodeScore(String nodeBseq, String nodeQseq)
+    {    
+        double score = 0;
+        for(int i= 0; i < getAlignmentLength(); i++){
+        	char a_i = nodeBseq.charAt(i);  
+        	char b_i = nodeQseq.charAt(i);  
+        	score += _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)b_i];
+        }
+        return score; 
+    }
+  
+    public double computeNodeScore(ConcurrentHashMap<Integer, Byte> nodeBseq, ConcurrentHashMap<Integer, Byte> nodeQseq)
+    {    
+        double score = 0;
+        HashSet<Integer> mergeIdxSet = new HashSet<Integer>(nodeQseq.keySet());
+        mergeIdxSet.addAll(nodeBseq.keySet());
+        
+        for(Integer key : mergeIdxSet)
+        {
+        	byte b = nodeBseq.containsKey(key) ? nodeBseq.get(key) : ref_sequence[key]; 
+        	byte c = nodeQseq.containsKey(key) ? nodeQseq.get(key) : ref_sequence[key]; 
+
+        	score += _nucleotide_nomenclature_scoreTable[b][c];
+        }
+        return score; 
+    }
+
+    public ArrayList<FlexibleNode> reduceAmbiguousBranch(ArrayList<FlexibleNode> selectedNodeList)
+    {
+    	return reduceAmbiguousBranch(selectedNodeList, false);
+    }
+    
+
+	@SuppressWarnings("unchecked")
+	public ArrayList<FlexibleNode> reduceAmbiguousBranch(ArrayList<FlexibleNode> selectedNodeList, Boolean returnMulti)
+    {
+    	if(selectedNodeList.size() < 2) return selectedNodeList;
+    	ArrayList<FlexibleNode> finalSelectedNode = new ArrayList<FlexibleNode>();   	
+      	
+    	HashMap<FlexibleNode, ArrayList<FlexibleNode>> parentCluster = new HashMap<FlexibleNode, ArrayList<FlexibleNode>>();
+    	for(int i=0; i<selectedNodeList.size(); ++i) 
+    	{
+    		FlexibleNode nodeB = selectedNodeList.get(i);
+    		FlexibleNode nodeA = (FlexibleNode) mytree.getParent(nodeB);
+    		if(!parentCluster.containsKey(nodeA))
+    		{
+    			ArrayList<FlexibleNode> temp = new ArrayList<FlexibleNode>();
+    			temp.add(nodeB);
+    			parentCluster.put(nodeA, temp);
+    		}
+    		else
+    		{
+    			parentCluster.get(nodeA).add(nodeB);
+    		}
+    	}
+    	
+    	////remove duplicate answer
+    	ArrayList<FlexibleNode> parentCluste_keySet = new ArrayList<FlexibleNode>(parentCluster.keySet());
+    	///post transversal order
+    	parentCluste_keySet.sort((d1,d2) -> (d2.getNumber()-d1.getNumber()));
+    	for(int k=0; k<parentCluste_keySet.size(); ++k)
+    	{
+    		FlexibleNode nodeA = parentCluste_keySet.get(k);
+    		if(parentCluster.containsKey(nodeA))
+    		{
+	    		ArrayList<FlexibleNode> temp = parentCluster.get(nodeA);
+	    		for(int i=0; i<temp.size(); ++i)
+	    		{
+	    			FlexibleNode nodeB = temp.get(i);
+	    			if(parentCluster.containsKey(nodeB))
+	    			{
+	    				int numLeavesA = get_num_leaves(nodeA);
+	    				int numLeavesB = get_num_leaves(nodeB);
+	    				if(numLeavesA < 2*numLeavesB) 
+	    				{
+	    					parentCluster.get(nodeA).remove(i);
+	    					if(parentCluster.get(nodeA).size() < 1) parentCluster.remove(nodeA);
+	    				}
+	    				else parentCluster.remove(nodeB);
+	    			}
+	    		}
+    		}
+    	}
+    	
+    	///select the maxchildren then minimum height branch length 
+    	for(FlexibleNode nodeA : parentCluster.keySet())
+    	{
+    		ArrayList<FlexibleNode> temp = parentCluster.get(nodeA);
+    		int maxChildrenB = 0;
+    		ArrayList<Integer> selectIdxs = new ArrayList<Integer>();
+    		for(int i=0; i<temp.size(); ++i)
+    		{
+    			if(temp.get(i).getChildCount() > maxChildrenB) 
+    			{
+    				maxChildrenB = temp.get(i).getChildCount();
+    				selectIdxs.clear();
+    				selectIdxs.add(i);
+    			}
+    			else if(temp.get(i).getChildCount() == maxChildrenB)
+    			{
+    				selectIdxs.add(i);
+    			}
+    		}
+    		if(selectIdxs.size() < 2) finalSelectedNode.add(temp.get(selectIdxs.get(0)));
+    		else
+    		{
+	    		double minHeight = Double.MAX_VALUE;
+	    		for(int i=0; i<selectIdxs.size(); ++i)
+	    		{
+	    			if(temp.get(selectIdxs.get(i)).getHeight() < minHeight) 
+	    			{
+	    				minHeight = temp.get(selectIdxs.get(i)).getHeight();
+	    			}
+	    		}
+	    		for(int i=0; i<selectIdxs.size(); ++i)
+	    		{
+	    			if(Math.abs(minHeight - temp.get(selectIdxs.get(i)).getHeight()) <= MinDoubleNumLimit) 
+	    				finalSelectedNode.add(temp.get(selectIdxs.get(i)));
+	    		}
+    		}
+    	}
+    	
+    	if(finalSelectedNode.size() < 2) return finalSelectedNode;
+    	selectedNodeList = (ArrayList<FlexibleNode>) finalSelectedNode.clone();
+    	finalSelectedNode.clear();
+    	
+    	ArrayList<FlexibleNode> bestBranch = reduceBestBranch(selectedNodeList, parentCluster);
+    	if(returnMulti)
+    	{
+    		finalSelectedNode.add(bestBranch.get(0));
+    		for(int i=0; i<selectedNodeList.size(); ++i)
+    		{
+    			if(selectedNodeList.get(i).getNumber() != bestBranch.get(0).getNumber())
+    			{
+    				finalSelectedNode.add(selectedNodeList.get(i));
+    			}
+    		}
+    		return finalSelectedNode;
+    	}
+    	else return bestBranch;
+    }
+	
+	
+	
+	public ArrayList<FlexibleNode> reduceBestBranch(ArrayList<FlexibleNode> selectedNodeList, HashMap<FlexibleNode, ArrayList<FlexibleNode>> parentCluster)
+    {
+    	if(selectedNodeList.size() < 2) return selectedNodeList;
+    	ArrayList<FlexibleNode> finalSelectedNode = new ArrayList<FlexibleNode>(); 
+
+        ////select best answer during multiple placements
+    	///select the maxchildren then minimum height branch length
+    	int maxChildren = 0;
+    	for(int i=0; i<selectedNodeList.size(); ++i)
+     	{
+     		FlexibleNode nodeB = selectedNodeList.get(i);
+     		FlexibleNode nodeA = (FlexibleNode) mytree.getParent(nodeB);
+     	
+            int total = nodeA.getChildCount(); 
+            if(parentCluster.containsKey(nodeB))  total = total  - 1;
+ 
+            if(total > maxChildren)
+ 			{
+             	maxChildren = total;
+ 				finalSelectedNode.clear();
+ 				finalSelectedNode.add(nodeB);
+ 			}
+ 			else if(maxChildren == total)
+ 			{
+ 				finalSelectedNode.add(nodeB);
+ 			}
+     	}
+    	 
+    	if(finalSelectedNode.size() < 2) return finalSelectedNode;
+    	selectedNodeList = new ArrayList<FlexibleNode>(finalSelectedNode);
+    	finalSelectedNode.clear();
+
+    	double minHeight = Double.MAX_VALUE;
+    	for(int i=0; i<selectedNodeList.size(); ++i) 
+    	{
+    		FlexibleNode nodeB = selectedNodeList.get(i);
+    		FlexibleNode nodeA = (FlexibleNode) mytree.getParent(nodeB);
+    	
+            double total = nodeA.getHeight();
+
+            if(minHeight - total >  MinDoubleNumLimit)
+			{
+            	minHeight = total;
+				finalSelectedNode.clear();
+				finalSelectedNode.add(nodeB);
+			}
+			else if(Math.abs(minHeight - total) <= MinDoubleNumLimit)
+			{
+				finalSelectedNode.add(nodeB);
+			}
+    	}
+
+    	if(finalSelectedNode.size() > 1) 
+    	{
+    		int randomIdx = (int) (Math.random() * finalSelectedNode.size());
+    		selectedNodeList = (ArrayList<FlexibleNode>) finalSelectedNode.clone();
+        	finalSelectedNode.clear();
+        	finalSelectedNode.add(selectedNodeList.get(randomIdx));
+    	}
+
+    	return finalSelectedNode;
+    }
+	
+    public int get_num_leaves(FlexibleNode node)
+    {
+    	if(!node.hasChildren()) return 1;
+    	int num_leaves = 0;
+    	for(int i=0; i<node.getChildCount(); ++i)
+    	{
+    		num_leaves += get_num_leaves(node.getChild(i));
+    	}
+    	return num_leaves;
+    }
+    
     class MyFlexibleTree extends FlexibleTree
     {
         MyFlexibleTree(Tree t){
@@ -280,6 +1014,10 @@ public class TIPars{
         MyFlexibleTree(Tree t, boolean keepAttribute){
             super(t, keepAttribute);
         }
+        /**
+         * Adopt a node hierarchy as its own. Only called by the FlexibleTree(FlexibleNode, TaxonList).
+         * This creates the node list and stores the nodes in post-traversal order.
+         */
         public void toAdoptNodes(FlexibleNode n){
             super.adoptNodes(n);
         }
@@ -328,80 +1066,296 @@ public class TIPars{
         //System.out.println(s + "\t" + v + "\t" + d);
         return d;
     }
-
-    public static double localEstimation(int[] scores, double ABbranch) {
-        if (scores[0] + scores[1] == 0) {
+   
+    public static double localEstimation(Integer[] selectedScores_int, double ABbranch) {
+        if (selectedScores_int[0] + selectedScores_int[1] == 0) {
             return 0;
         }
-        double d = ABbranch * ((double) scores[2])/((double) (scores[0]+scores[1]));
+
+        double d = ABbranch * ((double) selectedScores_int[2])/((double) (selectedScores_int[0]+selectedScores_int[1]));
+
+        return d;
+    }
+    
+    public static double localEstimation(Double[] selectedScores, double ABbranch) {
+        if (selectedScores[0] + selectedScores[1] == 0) {
+            return 0;
+        }
+
+        double d = ABbranch * selectedScores[2] / (selectedScores[0]+selectedScores[1]);
 
         return d;
     }
 
+    public static double localEstimation(double score_c2ab, double score_ab, double ABbranch) {
+        if (score_c2ab <=  MinDoubleNumLimit) {
+            return 0;
+        }
 
-    // If not found return -1, -99, else return branch length & number of node distance
-    public static double[] nodeAisAncestorOfNodeB(FlexibleNode a, FlexibleNode b){
+        double d = ABbranch * score_c2ab / score_ab;
+
+        return d;
+    }
+    
+
+    public static FlexibleNodeBranch returnCommonAncestor(FlexibleNode a, FlexibleNode b, Tree tree){
+    	FlexibleNodeBranch nodeAndBranch = new TIPars().new FlexibleNodeBranch();
         if(a == b){
-            return new double[]{0, 0};
+        	nodeAndBranch.a = a;
+        	nodeAndBranch.b = 0.0;
+            return nodeAndBranch;
         } else{
-            double outdis = b.getLength();
-            FlexibleNode k = b.getParent();
-            boolean found = false;
-            double num_node = 1;
-            while(!k.isRoot()){
-                if(k == a){
-                    found = true;
-                    break;
-                } else{
-                    outdis += k.getLength();
-                    k = k.getParent();
-                    num_node += 1;
-                }
+            HashMap<FlexibleNode, Double> bAncestors = new HashMap<FlexibleNode, Double>();
+            FlexibleNode parent = b;
+            double dist = 0.0;
+            bAncestors.put(b, dist);
+            while(parent != null && !parent.isRoot())
+            {
+            	dist = dist + parent.getLength();
+            	bAncestors.put(parent.getParent(), dist);
+            	parent = parent.getParent();
             }
-            if(k.isRoot() && k == a){ outdis += k.getLength(); }
-            if(found){ return new double[]{outdis, num_node}; }
-            else{ return new double[]{-1, -99}; } // -99 is dummy value
+            parent = a;
+            dist = 0.0;
+            while(!bAncestors.containsKey(parent) && !tree.isRoot(parent))
+            {
+            	dist = dist + parent.getLength();
+            	parent = parent.getParent();
+            }
+            nodeAndBranch.a = parent;
+        	nodeAndBranch.b = dist;
+        	if(bAncestors.containsKey(parent))
+        		nodeAndBranch.b += bAncestors.get(parent);
+            return nodeAndBranch;
         }
     }
+    
 
 
-    // Remove a taxon Q, and return "FlexibleNode B" AND "B-P br.length" as the below:
-    //        A
-    //        |
-    //        P
-    //       /|
-    //      / |
-    //     Q  B
-    // Note the removal will be effective to the input tree object
-    public static FlexibleNodeBranch<FlexibleNode, Double> removeTaxon(FlexibleTree t, FlexibleNode n){
+    public static FlexibleNodeBranch removeTaxon(FlexibleTree tree, FlexibleNode node)
+    {
         try{
+        	MyFlexibleTree t = new TIPars().new MyFlexibleTree(tree, true);
+            copyAttributeFromOneNodeToAnother((FlexibleNode)tree.getRoot(), (FlexibleNode) t.getRoot());
+            
             t.beginTreeEdit();
+            FlexibleNode n = (FlexibleNode) t.getNode(node.getNumber());
             FlexibleNode p = n.getParent();
+            
+            FlexibleNode pReturn = (FlexibleNode)tree.getNode(p.getNumber());
+            FlexibleNode aReturn = (FlexibleNode)(pReturn.getParent());
+            double true_dist1 = p.getLength() + n.getLength();
+            double true_dist2 = n.getLength();
+            
             p.removeChild(n);
             n.setParent(null);
             if(p.getChildCount() == 1){ // Remove this p node if if has less than 2 child nodes
-                FlexibleNode b = (FlexibleNode)(p.getChild(0));
-                FlexibleNode a = (FlexibleNode)(p.getParent());
-                a.addChild(b);
-                a.removeChild(p);
-                b.setParent(a);
-                double oldb2p = b.getLength();
-                b.setLength(b.getLength()+p.getLength());
-                p.setParent(null);
-                t.endTreeEdit();
-                return new TIPars().new FlexibleNodeBranch<FlexibleNode, Double>(b, new Double(oldb2p));
+            	if(!p.isRoot())
+            	{
+            		FlexibleNode b = (FlexibleNode)(p.getChild(0));
+                    FlexibleNode a = (FlexibleNode)(p.getParent());
+                    
+                    a.addChild(b);
+                    a.removeChild(p);
+                    b.setParent(a);
+                    double oldb2p = b.getLength();
+                    b.setLength(b.getLength()+p.getLength());
+                    p.setParent(null);
+                    t.endTreeEdit();
+                    FlexibleNodeBranch result = new TIPars().new FlexibleNodeBranch(aReturn, true_dist1);
+                    result.tree = t;
+
+                    t.toAdoptNodes((FlexibleNode)t.getRoot());
+                    return result;
+            	}
+            	else
+            	{
+            		FlexibleNode b = (FlexibleNode)(p.getChild(0));
+            		for(int i=0; i<b.getChildCount(); ++i)
+            		{
+            			FlexibleNode c = (FlexibleNode)(b.getChild(i));
+            			c.setLength(c.getLength() + b.getLength());
+            			p.addChild(c);
+            			c.setParent(p);
+            		}
+            		p.removeChild(b);
+            		b.setParent(null);
+            		t.endTreeEdit();
+            		FlexibleNodeBranch result = new TIPars().new FlexibleNodeBranch(pReturn, true_dist1);
+                    result.tree = t;
+
+                    t.toAdoptNodes((FlexibleNode)t.getRoot());
+                    return result;
+            	}
             } else{
                 t.endTreeEdit();
-                return new TIPars().new FlexibleNodeBranch<FlexibleNode, Double>(p, new Double(0.0)); //? p, p.getLentth ?
+                FlexibleNodeBranch result = new TIPars().new FlexibleNodeBranch(pReturn, true_dist2);
+                result.tree = t;
+
+                t.toAdoptNodes((FlexibleNode)t.getRoot());  
+                return result;//? p, p.getLentth ?
             }
         } catch(Exception e){
             e.printStackTrace();
+      
             return null;
         }
     }
+    
+    public static FlexibleNodeBranchList removeTaxon(FlexibleTree tree, ArrayList<FlexibleNode> nodes)
+    {
+        try{
+        	MyFlexibleTree t = new TIPars().new MyFlexibleTree(tree, true);
+            copyAttributeFromOneNodeToAnother((FlexibleNode)tree.getRoot(), (FlexibleNode) t.getRoot());
+            
+            ArrayList<FlexibleNode> removeNodes = new ArrayList<FlexibleNode>();
+            for(int i=0; i<nodes.size(); ++i)
+            	removeNodes.add((FlexibleNode) t.getNode(nodes.get(i).getNumber()));
+            
+            FlexibleNodeBranchList flexibleNodeBranchList = new TIPars().new FlexibleNodeBranchList();
+            flexibleNodeBranchList.nodeBranchList = new ArrayList<FlexibleNodeBranch>();
+            
+            t.beginTreeEdit();
+     	   
+           for(FlexibleNode node : removeNodes)
+           {
+        	  
+	            FlexibleNode n = node; //(FlexibleNode) t.getNode(node.getNumber());
+	            FlexibleNode p = n.getParent();
+	            System.out.println(p.getNumber());
+	            
+	            FlexibleNode pReturn = (FlexibleNode)tree.getNode(p.getNumber());
+	            String pName = (String)p.getAttribute(internalnode_nidname);
+	            String pReturnName = (String)pReturn.getAttribute(internalnode_nidname);
+	            if(!pName.equals(pReturnName))
+	            {
+	            	System.out.println("removeTaxon: "+pName+"|"+pReturnName);
+	            	return null;
+	            }
+	            
+	            FlexibleNode aReturn = (FlexibleNode)(pReturn.getParent());
+	            double true_dist1 = p.getLength() + n.getLength();
+	            double true_dist2 = n.getLength();
+	            
+	            p.removeChild(n);
+	            n.setParent(null);
+	            if(p.getChildCount() == 1){ // Remove this p node if if has less than 2 child nodes
+	                FlexibleNode b = (FlexibleNode)(p.getChild(0));
+	                FlexibleNode a = (FlexibleNode)(p.getParent());
+	                
+	                a.addChild(b);
+	                b.setParent(a);
+	                double oldb2p = b.getLength();
+	                b.setLength(b.getLength()+p.getLength());
+	                
+	                a.removeChild(p);
+	                p.setParent(null);
+	
+	                FlexibleNodeBranch result = new TIPars().new FlexibleNodeBranch(aReturn, true_dist1);
+	                result.tree = null;
+	                flexibleNodeBranchList.nodeBranchList.add(result);
+	            } else{
+	                
+	                FlexibleNodeBranch result = new TIPars().new FlexibleNodeBranch(pReturn, true_dist2);
+	                result.tree = null;
+	                flexibleNodeBranchList.nodeBranchList.add(result);
+	            }
+           }
+           t.endTreeEdit();
+           t.toAdoptNodes((FlexibleNode)t.getRoot());
+           flexibleNodeBranchList.tree = t;
+           return flexibleNodeBranchList;
+        } catch(Exception e){
+            e.printStackTrace();
+      
+            return null;
+        }
+    }
+    
+    public static MyFlexibleTree removeTaxonReturnTree(FlexibleTree tree, ArrayList<FlexibleNode> nodes)
+    {
+        try{
+        	MyFlexibleTree t = new TIPars().new MyFlexibleTree(tree, true);
+            copyAttributeFromOneNodeToAnother((FlexibleNode)tree.getRoot(), (FlexibleNode) t.getRoot());
+            
+            ArrayList<FlexibleNode> removeNodes = new ArrayList<FlexibleNode>();
+            for(int i=0; i<nodes.size(); ++i)
+            {
+            	removeNodes.add((FlexibleNode) t.getNode(nodes.get(i).getNumber()));
+            	 String sequenceName1 = nodes.get(i).getTaxon().getId();
+            	 String sequenceName2 = ((FlexibleNode)(t.getNode(nodes.get(i).getNumber()))).getTaxon().getId();
+            	 if(!sequenceName1.equals(sequenceName2)) 
+            	 {
+            		 System.out.println(sequenceName1 + " != " + sequenceName2);
+            		 return null;
+            	 }
+            	 if( ((FlexibleNode)(t.getNode(nodes.get(i).getNumber()))).isRoot())
+            	 {
+            		 System.out.println(sequenceName2 + " original is root");
+            		 return null;
+            	 }
+            }
+            
+            FlexibleNodeBranchList flexibleNodeBranchList = new TIPars().new FlexibleNodeBranchList();
+            flexibleNodeBranchList.nodeBranchList = new ArrayList<FlexibleNodeBranch>();
+            
+            t.beginTreeEdit();
+           for(FlexibleNode n : removeNodes)
+           {
+	            if(n.isRoot())  
+	            {
+	            	System.out.println(n.getTaxon().getId() + " is root");
+	            	if(n.getParent() != null) System.out.println("root but not null");
+	            	return null;
+	            }
+	            FlexibleNode p = n.getParent();
+	            if(p == null)
+	            {
+	            	System.out.println(n.getTaxon().getId() + " no parent");
+	            	return null;
+	            }
+	            if(p.getChildCount() > 2)
+	            {
+	            	p.removeChild(n);
+	            }
+	            else if(p.getChildCount() == 2)
+	            {
+	            	for(int j=0; j<2; ++j)
+	            	{
+	            		if(!p.getChild(j).equals(n))
+	            		{
+	            			if(p.isRoot()) 
+	            			{
+	            				System.out.println(n.getTaxon().getId() + "'s parent is root and has only two children");
+	        	            	return null;
+	            			}
+	            			FlexibleNode a = (FlexibleNode)(p.getParent());
+	            			FlexibleNode b = (FlexibleNode)(p.getChild(j));
+	            			double newbl = b.getLength() + p.getLength();
+	     	                b.setLength(newbl);
+	            			a.addChild(b);
+	            			a.removeChild(p);
+	            		}
+	            	}
+	            }
+	            else
+	            {
+	            	System.out.println(n.getTaxon().getId() + " has no sister");
+	            	return null;
+	            }
+           }
+           t.endTreeEdit();
+           t.toAdoptNodes((FlexibleNode)t.getRoot());
+           return t;
+        } catch(Exception e){
+            e.printStackTrace();
+      
+            return null;
+        }
+    }
+    
 
-    // copy attribute from n to m
-    private void copyAttributeFromOneNodeToAnother(FlexibleNode n, FlexibleNode m){
+    private static void copyAttributeFromOneNodeToAnother(FlexibleNode n, FlexibleNode m){
         Iterator attnames = n.getAttributeNames();
         while(attnames != null && attnames.hasNext()){
             String ahname = (String)attnames.next();
@@ -409,40 +1363,40 @@ public class TIPars{
         }
     }
 
-    private String getSequenceByNode(FlexibleNode a){
-        String seq = node2Sseq.get(a);
+    private static String getStringSequenceByNode(FlexibleNode a){
+    	if(node2seqName.containsKey(a))
+    	{
+    		if(!seqIdxMap.containsKey((node2seqName.get(a))))
+    		{
+    			System.out.println("seqIdxMap can not access " + (node2seqName.get(a)));
+    		}
+    		String seq = stringSequencesList.get(seqIdxMap.get((node2seqName.get(a))));
+    		return seq;
+    	}
+    	else
+    	{
+    		String selectedBnid = (String)a.getAttribute(internalnode_nidname);
+            if (selectedBnid == null) {
+                selectedBnid = a.getTaxon().getId();
+            }
+            System.out.println("node2seqName can not access " + a.getNumber() + "/" + selectedBnid);
+    		System.exit(-1);
+    		return null;
+    	}
+    }
+    
+    private static ConcurrentHashMap<Integer, Byte> getVariantSequenceByNode(FlexibleNode a){
+    	ConcurrentHashMap<Integer, Byte> seq = multationSequencesMap.get(seqIdxMap.get((node2seqName.get(a))));
         return seq;
     }
 
-    // Clean the "i102" problem in attribute whose value is String type. I have mentioned this in email.
-    public static Tree cleanStringAttributeInTree(Tree t){
-        for(int i=0; i<t.getNodeCount(); i++){
-            FlexibleNode nr = (FlexibleNode)t.getNode(i);
-            Iterator attnames = nr.getAttributeNames();
-            while(attnames != null && attnames.hasNext()){
-                String ahname = (String)attnames.next();
-                if(nr.getAttribute(ahname) instanceof String){
-                    String v = (String)nr.getAttribute(ahname);
-                    v = v.replaceAll("\"", "");
-                    nr.setAttribute(ahname,  v);
-                } else{
-                    nr.setAttribute(ahname,  nr.getAttribute(ahname));
-                }
-            }
-        }
-        return t;
-    }
 
-    // Suppose to contain the "FlexibleNode B" AND "B-P br.length" as the below:
-    //        A
-    //        |
-    //        P
-    //       /|
-    //      / |
-    //     Q  B
-    public class FlexibleNodeBranch<FlexibleNode,Double> {
+
+    public class FlexibleNodeBranch {
         public FlexibleNode a;
         public Double b;
+        public Tree tree;
+        public String nodeAName;
         public FlexibleNodeBranch(FlexibleNode a, Double b) {
             this.a = a;
             this.b = b;
@@ -464,281 +1418,260 @@ public class TIPars{
             return this.b;
         }
     }
-
-    public FlexibleNodeBranch<FlexibleNode, Double> getNodeBandBPbrlen(){
-        return myBandBPbranch;
+    
+    public static int getAlignmentLength(){
+        return sequence_character_length;
     }
+    
 
-
-    private void getSequenceComparisonPosition(int[] position, String a, String b, String c) {
-        position[0] = 0;
-        position[1] = a.length()-1;
-
-        if (gap.equals("distinctive") || gap.equals("inner")) {
-            endTrailingGap3(position, a, b, c);
-        }
-    }
-
-    private static void endTrailingGap3(int[] position, String a, String b, String c) {
-        endTrailingGap(position, a);
-        endTrailingGap(position, b);
-        endTrailingGap(position, c);
-    }
-
-    private static void endTrailingGap(int[] pos, String a) {
-        int i=-1;
-        while (i < a.length()) {
-            ++i;
-            if (a.charAt(i) != '-') {
-                break;
-            }
-        }
-        int j=a.length();
-        while (j >= 0) {
-            --j;
-            if (a.charAt(j) != '-') {
-                break;
-            }
-        }
-        if (pos[0] < i)
-            pos[0] = i;
-        if(pos[1] > j)
-            pos[1] = j;
-    }
-
-    public String getStringAndScoreFromNodeABQSeq(String a, String b, String c, Integer[] scores1){
-        int[] scores = new int[3]; scores[0] = 0; scores[1] = 0; scores[2] = 0;
-        a = a.toUpperCase();
-        b = b.toUpperCase();
-        c = c.toUpperCase(); // c is Q
-        // String p = "";
-        boolean precedingGapC = true;
-        boolean precedingGapB = true;
-
-        StringBuilder p = new StringBuilder(c);
-
-        int[] position = new int[2];
-        getSequenceComparisonPosition(position, a, b, c);
-        // System.out.println(a.length() + "\t" + position[0] + "\t" + position[1] + "\n");
-        boolean ingoreGap = false;
-        if (gap.equals("ignore")) {
-            ingoreGap = true;
-        }
-
-        for(int i=position[0]; i<=position[1]; i++){
-            char ai = a.charAt(i);
-            char bi = b.charAt(i);
-            char ci = c.charAt(i);
-            if(ai == ci && ai == bi){
-                continue;
-                // do nothing
-            } else if(ai != ci && ci != bi && ai != bi){   // ATC
-                // prefer to assign the character using the most closely seqence.
-                if (scores[2] <= scores[0] && scores[2] <= scores[1]) {
-                    p.setCharAt(i, ci);
-                    scores[0]++;
-                    scores[1]++;
-                } else if (scores[1] <= scores[0] && scores[1] <= scores[2]) {
-                    p.setCharAt(i, bi);
-                    scores[0]++;
-                    scores[2]++;
-                } else {
-                    p.setCharAt(i, ai);
-                    scores[1]++;
-                    scores[2]++;
-                }
-
-
-                if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
-                    continue;
-                }
-            } else if(ai == bi && ci != bi){   // AAT
-                //p += ai;
-                p.setCharAt(i, ai);
-
-                if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
-                    continue;
-                }
-                scores[2]++;
-            }
-            else if(ai != bi && ci == bi){   // ATT
-                //p += bi;
-                p.setCharAt(i, bi);
-                if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
-                    continue;
-                }
-                scores[0]++;
-            }
-            else if(ai == ci && ci != bi){   // TAT
-                p.setCharAt(i, ai);
-
-                if (ingoreGap && (ai == '-' || bi == '-' || ci == '-')) {
-                    continue;
-                }
-
-                scores[1]++;
-            }
-            else if(DEBUG){ System.out.println("Unmatched ABQ type"); }
-        }
-        if(DEBUG) System.out.println("score: "+scores[0]+"|"+scores[1]+"|"+scores[2]);
-        scores1[0] = new Integer(scores[0]);
-        scores1[1] = new Integer(scores[1]);
-        scores1[2] = new Integer(scores[2]);
-        String pseq = p.toString();
-        //	System.out.println(pseq.length() + "\t" + c.length());
-        return pseq;
-    }
-
-
-    public int getAlignmentLength(){
-        if(taxaseq != null){
-            return (taxaseq.getAlignedSequenceString(0)).length();
-        } else{
-            return -1;
-        }
-    }
-
-
-    public static SimpleAlignment readFastaAlignmentFile(String fn){
-        /////////// Read the sequence/state file (expect fasta format)
-        SimpleAlignment sa = null;
+    public static HashMap<Integer, String> readFastaFile2Alignment(String fn){
+    	HashMap<Integer, String> alignmnetIdxList = new HashMap<Integer, String>();
+        int startIndex = stringSequencesList.size();
         try{
-            sa = new SimpleAlignment();
-            char[] agg = {'H', 'A', 'L', 'I', 'K', 'M', 'Y', 'C', 'E', 'P', 'G', 'S', 'D', 'T', 'F', 'V', 'W', 'N', 'X', '?', '-'};
-            GeneralDataType dt1 = new GeneralDataType(agg);
-            sa.setDataType(dt1);
             BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
-            String fasline = br2.readLine();
+            String fasline = br2.readLine().trim();
             String desc;
             while(fasline != null){
-                fasline = fasline.replaceAll("\n", "");
-                String seqseq = "";
+                StringBuffer sequence = new StringBuffer();
                 if(fasline.matches("^>.+")){
                     desc = fasline;
-                    fasline = br2.readLine();
+                    fasline = br2.readLine().trim();
                     while(fasline != null && !fasline.matches("^>.+")) {
-                        seqseq += fasline;
+                    	sequence.append(fasline);
                         fasline = br2.readLine();
                     }
                     desc = desc.replaceAll(">", "");
-                    seqseq = seqseq.replaceAll("\n", "");
-                    // manually make the alignment. Taxon is supposed to be name of the sequence
-                    sa.addSequence(new dr.evolution.sequence.Sequence(new Taxon(desc), seqseq));
+                    String seqseq = sequence.toString();
+                    seqIdxMap.put(desc, startIndex);
+                	stringSequencesList.add(seqseq.toUpperCase());
+                	alignmnetIdxList.put(startIndex, desc);
+                	startIndex++;
                 }
-                // fasline now store desc for next sequence
-            }
+            }   
         }
         catch(Exception e){
             e.printStackTrace();
         }
-        return sa;
+        System.gc();
+        return alignmnetIdxList;
     }
-
-    public static void main(String[] args) {
-        long startTime = System.currentTimeMillis();
-
-        String insfn = "";
-        String intfn = "";
-        String inafn = "";
-        String inqfn = "";
-        String inm   = "";
-        String ing   = "";
-        String outfn = "";
-        String otype = "";
-        //String outdisfn = "";
-        String nidname = "label";
-        String attname = "GenName";
-        boolean outdis = true;
+    
+    
+    
+    public static void readFastaAlignmentFile(String fn){
+        int startIndex = stringSequencesList.size();
         try{
-            if(!(args.length == 11 || args.length == 9)){
-                intfn = getShellInput("Enter your input tree file: ");
-                insfn = getShellInput("Enter your input taxa seq file [fasta name is taxaname]: ");
-                inafn = getShellInput("Enter your input ancestral seq file [fasta name is nid]: ");
-                inqfn = getShellInput("Enter your input query seq file [fasta name is taxaname]: ");
-                inm   = getShellInput("Enter substitution model for estimating branch ['LE', 'JC69' or 'K2P']: ");
-                ing   = getShellInput("Enter gap option ['ignore', 'inner' or 'all']: ");
-                outfn = getShellInput("Enter your output tree file: ");
-                otype = getShellInput("Enter algorithm type [insertion or placement]: ");
-                String tempstr = getShellInput("Want to output ABQdis, Bnid and genotype info? (0=no|1=yes): ");
-                outdis = (tempstr.equals("0"))?false:true;
-                if(outdis){
-                    nidname = getShellInput("Enter your nid attribute name(e.g. nid): ");
-                    attname = getShellInput("Enter your genotype attribute name (e.g. GenName): ");
-                }
-            } else{
-                intfn = args[0];
-                insfn = args[1];
-                inafn = args[2];
-                inqfn = args[3];
-                inm   = args[4];
-                ing   = args[5];
-                outfn = args[6];
-                otype = args[7];
-                String tempstr = args[8];
-                outdis = (tempstr.equals("0"))?false:true;
-                if(outdis){
-                    nidname = args[9];
-                    attname = args[10];
-                }
-
-            }
-
-            String OUTPUT_FOLDER = getFolder(outfn);
-
-            /////////// Read the sequence/state file (expect fasta format)
-            SimpleAlignment taxa_align = readFastaAlignmentFile(insfn);
-            SimpleAlignment anc_align  = readFastaAlignmentFile(inafn);
-
-            //System.out.println(query_align[0] + "\n\n\n" + query_align[1]);
-
-
-            NewickImporter tni = new NewickImporter(new FileReader(intfn));
-            Tree tree = tni.importTree(taxa_align);
-            TIPars myAdd = new TIPars(taxa_align, anc_align, tree, nidname, inm, ing, otype, OUTPUT_FOLDER);
-
-            Tree outtree = null;
-            long startTime2 = System.currentTimeMillis();
-            SimpleAlignment query_align = readFastaAlignmentFile(inqfn);
-            if (otype.equals("insertion")) {
-                int nq = query_align.getTaxonCount();
-                for (int i=0; i<nq; i++) {
-                    String[] tmp_query = new String[2];
-                    tmp_query[0] = query_align.getTaxonId(i);
-                    tmp_query[1] = query_align.getAlignedSequenceString(i);
-                    String qid = "q" + (i+1);
-                    String pid = "p" + (i+1);
-                    outtree = myAdd.addQuerySequence(tmp_query[0], tmp_query[1], qid, pid, outdis, nidname, attname, new double[3], otype, 0);
-                    // q1 and p1 are the attributes of nodeQ and nodeP.
-                    myAdd.mytree = outtree;
-                    myAdd.setupHashtableOfNode2Seq();
-                }
-            } else {
-                int nq = query_align.getTaxonCount();
-                placements = new String[nq];
-                for (int i=0; i<nq; i++) {
-                    String[] tmp_query = new String[2];
-                    tmp_query[0] = query_align.getTaxonId(i);
-                    tmp_query[1] = query_align.getAlignedSequenceString(i);
-                    String qid = "q" + (i+1);
-                    String pid = "p" + (i+1);
-                    outtree = myAdd.addQuerySequence(tmp_query[0], tmp_query[1], qid, pid, outdis, nidname, attname, new double[3], otype, i);
+            BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
+            String fasline = br2.readLine().trim();
+            String desc;
+            while(fasline != null){
+                StringBuffer sequence = new StringBuffer();
+                if(fasline.matches("^>.+")){
+                    desc = fasline;
+                    fasline = br2.readLine().trim();
+                    while(fasline != null && !fasline.matches("^>.+")) {
+                        sequence.append(fasline);
+                        fasline = br2.readLine();
+                    }
+                    desc = desc.replaceAll(">", "");
+                    String seqseq = sequence.toString();
+                    if(sequence_character_length < 0) sequence_character_length = seqseq.length();
+                	seqIdxMap.put(desc, startIndex++);
+                	stringSequencesList.add(seqseq.toUpperCase());
                 }
             }
-            long endTime2 = System.currentTimeMillis();
-            long totalTime2 = endTime2 - startTime2;
-
-             writeToTree(outtree, outfn, otype);
-            //writeToTree(myAdd.mytree, outfn, otype);
-
-            long endTime = System.currentTimeMillis();
-            long totalTime = endTime - startTime;
-            System.out.println("Insertion time: " + (double) totalTime2/1000);
-            System.out.println("Overall time: " + (double) totalTime/1000);
+        }
+        catch(Exception e){
+            e.printStackTrace();
+            
+        }
+        System.gc();
+    }
+ 
+    public static void readVCFAlignmentFile(String fn){
+        int startIndex = multationSequencesMap.size();
+        boolean header_found = false;
+        try{		 
+            BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
+            ////read header
+            while(!header_found){
+            	String vcfline = br2.readLine().trim();
+            	if(vcfline == null || vcfline.isEmpty()) continue;
+            	String[] words = vcfline.trim().split("\\s+");
+            	if(words.length > 2)
+            	{
+            		if(words[1].contains("POS"))
+            		{
+                        // Sample names start from the 10th word in the header
+                        for (int j=9; j < words.length; j++) 
+                        {
+                        	seqIdxMap.put(words[j], startIndex + j - 9);
+                        	multationSequencesMap.add(new ConcurrentHashMap<Integer, Byte>());
+                        }
+                        header_found = true;
+                     }
+            	}
+            }
+            
+            if(!header_found)
+            {
+            	System.out.println("Error! Incorrect VCF file. No Header");
+     			System.exit(-1);
+            }
+            int numberofThreads = Runtime.getRuntime().availableProcessors();
+            //System.out.println("numberofThreads = " + numberofThreads);
+            ArrayList<Integer> nodeIdxList = new ArrayList<Integer>(numberofThreads);
+        	for(int i=0; i<numberofThreads; ++i) nodeIdxList.add(i);
+        	
+        	nodeIdxList.parallelStream()
+            .forEach(nodeIdx ->
+                     {
+                    	 String vcfline = null;
+                         try {
+							while((vcfline = br2.readLine()) != null){
+								if(vcfline.isEmpty()) continue;
+							 	String[] words = vcfline.trim().split("\\s+");
+							 	if (words.length != 9 + multationSequencesMap.size() - startIndex) {
+						 			System.out.println("Error! Incorrect VCF file.");
+						 			System.exit(-1);
+						         }
+						 		int variant_pos = Integer.parseInt(words[1]); 
+						 		byte ref_nuc = (byte)words[3].charAt(0);
+						 		if(ref_sequence[variant_pos] == (byte)'\0')
+						 		{
+						 			ref_sequence[variant_pos] = ref_nuc;
+						 		}
+						 		else if(ref_nuc != ref_sequence[variant_pos])
+						 		{
+						 			System.out.println("Error! Different referen sequence.");
+						 			System.exit(-1);
+						 		}
+						 		
+						 		String[] alleles = words[4].split(",");
+						 		for (int j=9; j < words.length; j++) {
+						              if (Character.isDigit(words[j].charAt(0))) {
+						                  int allele_id = Integer.parseInt(words[j]);
+						                  if (allele_id > 0) { 
+						                 	 byte allele = (byte)alleles[allele_id-1].charAt(0);
+						                 	 multationSequencesMap.get(startIndex + j - 9).put(variant_pos, allele);
+						                  }
+						              }
+						        }
+							 		
+							 }							 
+						} catch (NumberFormatException | IOException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+                     }
+                    );
+        	br2.close();
+        	for(int i=0; i<ref_sequence.length; ++i) 
+        		if(ref_sequence[i] != (byte)'\0') sequence_character_length = i;
         }
         catch(Exception e){
             e.printStackTrace();
         }
+        System.gc();
     }
+    
+    
+    public static HashMap<Integer, String> readVCFFile2Alignment(String fn){
+    	    HashMap<Integer, String> alignmnetIdxList = new HashMap<Integer, String>();
+            int startIndex = multationSequencesMap.size();
+            boolean header_found = false;
+            try{
+                BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
+                
+                ////read header
+                while(!header_found){
+                	String vcfline = br2.readLine().trim();
+                	if(vcfline == null || vcfline.isEmpty()) continue;
+                	String[] words = vcfline.trim().split("\\s+");
+                	if(words.length > 2)
+                	{
+                		if(words[1].contains("POS"))
+                		{
+                            // Sample names start from the 10th word in the header
+                            for (int j=9; j < words.length; j++) 
+                            {
+                            	seqIdxMap.put(words[j], startIndex + j - 9);
+                            	multationSequencesMap.add(new ConcurrentHashMap<Integer, Byte>());
+                            	alignmnetIdxList.put(startIndex + j - 9, words[j]);
+                            }
+                            header_found = true;
+                         }
+                	}
+                }
+                
+                if(!header_found)
+                {
+                	System.out.println("Error! Incorrect VCF file. No Header");
+         			System.exit(-1);
+                }
+                int numberofThreads = Runtime.getRuntime().availableProcessors();
+                ArrayList<Integer> nodeIdxList = new ArrayList<Integer>(numberofThreads);
+            	for(int i=0; i<numberofThreads; ++i) nodeIdxList.add(i);
+
+            	nodeIdxList.parallelStream()
+                .forEach(nodeIdx ->
+                         {
+                        	 String vcfline = null;
+                             try {
+								while((vcfline = br2.readLine()) != null){
+									if(vcfline == null) break;
+								 	if(vcfline.isEmpty()) continue;
+								 	String[] words = vcfline.trim().split("\\s+");
+								 	if(words.length > 1)
+								 	{
+								 		if (words.length != 9 + multationSequencesMap.size() - startIndex) {
+								 			System.out.println("Error! Incorrect VCF file.");
+								 			System.exit(-1);
+								         }
+								 		int variant_pos = Integer.parseInt(words[1]); 
+								 		byte ref_nuc = (byte)words[3].charAt(0);
+								 		if(ref_sequence[variant_pos] == (byte)'\0')
+								 		{
+								 			ref_sequence[variant_pos] = ref_nuc;
+								 		}
+								 		else if(ref_nuc != ref_sequence[variant_pos])
+								 		{
+								 			System.out.println("Error! Different referen sequence.");
+								 			System.exit(-1);
+								 		}
+								 		
+								 		String[] alleles = words[4].split(",");
+								 		for (int j=9; j < words.length; j++) {
+								              if (Character.isDigit(words[j].charAt(0))) {
+								                  int allele_id = Integer.parseInt(words[j]);
+								                  if (allele_id > 0) { 
+								                 	 byte allele = (byte)alleles[allele_id-1].charAt(0);
+								                 	 multationSequencesMap.get(startIndex + j - 9).put(variant_pos, allele);
+								                  }
+								              }
+								          }
+								 	}
+								 }
+							} catch (NumberFormatException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+                         }
+                        );
+            	br2.close();
+            	for(int i=0; i<ref_sequence.length; ++i) 
+            		if(ref_sequence[i] != (byte)'\0') sequence_character_length = i;
+            }
+            catch(Exception e){
+                e.printStackTrace();
+            }
+            System.gc();
+            return alignmnetIdxList;
+        }
+
 
     public static String getFolder(String filename) {
         String dir = filename.substring(0, filename.lastIndexOf("/") + 1);
@@ -773,8 +1706,10 @@ public class TIPars{
             PrintStream out = new PrintStream(new FileOutputStream(new File(fn)));
             out.println(buffer.toString());
             out.close();
+   
         } catch(Exception e){
             e.printStackTrace();
+  
         }
     }
 
@@ -791,7 +1726,8 @@ public class TIPars{
                 toNewick(tree, (FlexibleNode) tree.getChild(node, i), buffer, otype);
                 if (i == (n-1)) {
                     buffer.append(')');
-                    String label = (String) node.getAttribute("label");
+                    String label = (String) node.getAttribute(internalnode_nidname);
+                    if(node.isExternal()) label = node.getTaxon().getId();
                     if (label != null)
                         buffer.append(label);
                 } else {
@@ -804,7 +1740,9 @@ public class TIPars{
                 appendEdgeNumber(buffer, node, otype);
             }
         }
+
     }
+    
 
     private static void appendEdgeNumber(StringBuilder buffer, FlexibleNode node, String otype) {
         if (otype.equals("placement")) {
@@ -833,13 +1771,14 @@ public class TIPars{
             fw.close();
         } catch(Exception e){
             e.printStackTrace();
+ 
         }
     }
 
-    public static void writeFASTA(String desc, String seq, String OUTPUT_FOLDER) {
-        String output = OUTPUT_FOLDER + desc + ".fas";
+    public static void writeFASTA(String desc, String seq, String output_folder) {
+        String output = output_folder + desc + ".fas";
         StringBuilder buffer = new StringBuilder();
-        buffer.append("> ");
+        buffer.append(">");
         buffer.append(desc);
         buffer.append("\n");
         buffer.append(seq);
@@ -847,23 +1786,438 @@ public class TIPars{
             PrintStream out = new PrintStream(new FileOutputStream(new File(output)));
             out.println(buffer.toString());
             out.close();
+
         } catch(Exception e) {
             e.printStackTrace();
+      
+        }
+    }
+    
+    public static void writeFASTAwithFullPath(String desc, String seq, String output_folder) {
+        String output = output_folder;
+        StringBuilder buffer = new StringBuilder();
+        buffer.append(">");
+        buffer.append(desc);
+        buffer.append("\n");
+        buffer.append(seq);
+        try{
+            PrintStream out = new PrintStream(new FileOutputStream(new File(output)));
+            out.println(buffer.toString());
+            out.close();
+
+        } catch(Exception e) {
+            e.printStackTrace();
+      
+        }
+    }
+    
+
+    public static void writeFASTA(ArrayList<String> desc, ArrayList<String> seq, String output_folder) {
+        String output = output_folder;
+        StringBuilder buffer = new StringBuilder();
+        for(int i=0; i<desc.size(); ++i)
+        {
+        	buffer.append(">");
+        	buffer.append(desc.get(i));
+        	buffer.append("\n");
+        	buffer.append(seq.get(i));
+        	buffer.append("\n");
+        }
+        try{
+            PrintStream out = new PrintStream(new FileOutputStream(new File(output)));
+            out.print(buffer.toString());
+            out.close();
+
+        } catch(Exception e) {
+            e.printStackTrace();
+      
+        }
+    }
+    
+    public static void writeFASTA(String[] desc, String[] seq, String output_folder) {
+        String output = output_folder;
+        StringBuilder buffer = new StringBuilder();
+        for(int i=0; i<desc.length; ++i)
+        {
+        	buffer.append(">");
+        	buffer.append(desc[i]);
+        	buffer.append("\n");
+        	buffer.append(seq[i]);
+        	buffer.append("\n");
+        }
+        try{
+            PrintStream out = new PrintStream(new FileOutputStream(new File(output)));
+            out.print(buffer.toString());
+            out.close();
+
+        } catch(Exception e) {
+            e.printStackTrace();
+      
         }
     }
 
-    public static String getShellInput(String question){
-        String myfile = "";
-        try {
-            BufferedReader stdin =
-                new BufferedReader(new InputStreamReader(System.in)
-                                   );
-            System.out.print(question);
-            myfile = stdin.readLine();
-        } catch (Exception e) {
-            System.out.println("Error in screen reading");
+    public static void writeMutation(String desc, ConcurrentHashMap<Integer, Byte> seqMutaion, String output_folder) {
+        String output = output_folder + desc + ".fas";
+        StringBuilder buffer = new StringBuilder();
+        buffer.append(desc);
+        buffer.append("\n");
+        for (ConcurrentHashMap.Entry < Integer, Byte > entry: seqMutaion.entrySet()) {
+            System.out.println(entry.getKey());
+            System.out.println(entry.getValue());
+            buffer.append(ref_sequence[entry.getKey()] + "|" + entry.getKey() + "|" + entry.getValue() + "\n");
         }
-        return myfile;
-    }
+        try{
+            PrintStream out = new PrintStream(new FileOutputStream(new File(output)));
+            out.println(buffer.toString());
+            out.close();
 
+        } catch(Exception e) {
+            e.printStackTrace();
+      
+        }
+    }
+    
+    
+    public class FlexibleNodeBranchList
+    {
+    	public ArrayList<FlexibleNodeBranch> nodeBranchList = new ArrayList<FlexibleNodeBranch>();
+    	public Tree tree;
+    }
+    
+    
+    public static boolean isNumeric(String str) {
+        for (int i = 0; i < str.length(); i++) {
+            //System.out.println(str.charAt(i));
+            if (!Character.isDigit(str.charAt(i))) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+     public static double[][] generate_nucleotide_nomenclature_scoreTable()
+     {
+    	 int size = 0;
+    	 for(int i=0; i<alphabet_nt.length; ++i)
+    		 if((byte)alphabet_nt[i] > size) size = (byte)alphabet_nt[i];
+    	 size = size + 1;
+    	 double[][] NodeScoreBigTable = new double[size][size];
+    	 for(int i=0; i<size; ++i) Arrays.fill(NodeScoreBigTable[0], 0);
+    	 
+    
+        // {'A', 'C', 'G', 'T', 'R', 'Y', 'M', 'K', 'S', 'W', 'H', 'B', 'V', 'D', 'N', '-'};
+    	 
+    	 for(int i=0; i<alphabet_nt.length-1; ++i)
+    	 {
+    		 for(int j=i+1; j<alphabet_nt.length-1; ++j)
+    		 {
+    			 int counts = _nucleotide_nomenclature.get((byte)alphabet_nt[i]).size() * _nucleotide_nomenclature.get((byte)alphabet_nt[j]).size();
+    			 int commoncounts = 0;
+    			 //if(counts == 1)
+    			 //{
+	    			 for(byte key : _nucleotide_nomenclature.get((byte)alphabet_nt[i]))
+	    			 {
+	    				 if(_nucleotide_nomenclature.get((byte)alphabet_nt[j]).contains(key)) commoncounts ++;
+	    			 }
+	    			 if(commoncounts < 1)
+	    			 NodeScoreBigTable[alphabet_nt[i]][alphabet_nt[j]] = 1.0;  // - commoncounts / (double)counts;
+    			 //}
+    		 }
+    	 }
+    	 
+    	 for(int i=0; i<alphabet_nt.length-1; ++i)
+    	 {
+    		 for(int j=0; j<i; ++j)
+    		 {
+    			 NodeScoreBigTable[alphabet_nt[i]][alphabet_nt[j]] = NodeScoreBigTable[alphabet_nt[j]][alphabet_nt[i]];
+    		 }
+    	 }
+    	 
+//    	 for(int i=0; i<alphabet_nt.length; ++i)
+//    	 {
+//    		 for(int j=0; j<alphabet_nt.length; ++j)
+//    		 {
+//    			 System.out.print(NodeScoreBigTable[alphabet_nt[i]][alphabet_nt[j]] + "\t");
+//    		 }
+//    		 System.out.print("\n");
+//    	 }
+ 
+    	 return NodeScoreBigTable;
+     }
+     
+     ////A: 0001
+     ////T: 0010
+     ////C: 0100
+     ////G: 1000
+     public static BitSet encodeNucleotide(byte b_i, BitSet nucleotides)
+     {
+    	 for(byte key : _nucleotide_nomenclature.get((byte)b_i))
+		 {
+    		 switch(key){
+    		    case 'A' :
+    		    	nucleotides.set(3);
+    		    case 'T' :
+    		    	nucleotides.set(2);
+    		    case 'C':
+    		    	nucleotides.set(1);
+    		    case 'G':
+    		    	nucleotides.set(0);
+    		    default : 
+    		}
+		 }
+    	 return nucleotides;
+     }
+     
+     public static BitSet encodeNucleotide(byte nucleotide)
+     {
+    	 BitSet nucleotides = new BitSet(4);
+    	 for(byte key : _nucleotide_nomenclature.get(nucleotide))
+		 {
+    		 switch(key){
+    		    case 'A' :
+    		    	nucleotides.set(3);
+    		    case 'T' :
+    		    	nucleotides.set(2);
+    		    case 'C':
+    		    	nucleotides.set(1);
+    		    case 'G':
+    		    	nucleotides.set(0);
+    		    default : 
+    		}
+		 }
+    	 return nucleotides;
+     }
+     
+     public static int NucleotideBitSet2Int(BitSet nucleotides)
+     {
+    	 int nucleotides_int = 0;
+    	 for(int i=0; i<4; ++i)
+    	 {
+    		 if(nucleotides.get(i)) nucleotides_int += Math.pow(2, i);
+    	 }
+    	 return nucleotides_int;
+     }
+
+     public static HashMap<BitSet, Byte> generate_nucleotide_nomenclature_characterTable()
+     {
+    	 HashMap<BitSet, Byte> nucleotide_nomenclature_map2char = new HashMap<BitSet, Byte>();
+    	 Byte[] nucleotide_nomenclature_array = {'A', 'C', 'G', 'T', 'R', 'Y', 'M', 'K', 'S', 'W', 'H', 'B', 'V', 'D', 'N'};
+    	 for(int i=0; i<nucleotide_nomenclature_array.length; ++i)
+    	 {
+    		 Byte nucleotide = nucleotide_nomenclature_array[i];
+    		 BitSet bitSet = encodeNucleotide(nucleotide);
+    		 nucleotide_nomenclature_map2char.put(bitSet, nucleotide);
+    	 }
+    	 return nucleotide_nomenclature_map2char; 
+     }
+     
+     public static HashMap<Byte, HashSet<Byte>> generate_nucleotide_nomenclature()
+     {
+    	 HashMap<Byte, HashSet<Byte>> nucleotide_nomenclature = new HashMap<Byte, HashSet<Byte>>();
+    	 //A
+    	 HashSet<Byte> tempA = new HashSet<Byte>(); tempA.add((byte) 'A');
+    	 nucleotide_nomenclature.put((byte) 'A',tempA);
+    	 //C
+    	 HashSet<Byte> tempC = new HashSet<Byte>(); tempC.add((byte) 'C');
+    	 nucleotide_nomenclature.put((byte) 'C',tempC);
+    	 //G
+    	 HashSet<Byte> tempG = new HashSet<Byte>(); tempG.add((byte) 'G');
+    	 nucleotide_nomenclature.put((byte) 'G',tempG);
+    	 //T
+    	 HashSet<Byte> tempT = new HashSet<Byte>(); tempT.add((byte) 'T');
+    	 nucleotide_nomenclature.put((byte) 'T',tempT);
+    	 //R
+    	 HashSet<Byte> tempR = new HashSet<Byte>(); tempR.add((byte) 'A'); tempR.add((byte) 'G');
+    	 nucleotide_nomenclature.put((byte) 'R',tempR);
+    	 //R
+    	 HashSet<Byte> tempY = new HashSet<Byte>(); tempY.add((byte) 'C'); tempY.add((byte) 'T');
+    	 nucleotide_nomenclature.put((byte) 'Y',tempY);
+    	 //M
+    	 HashSet<Byte> tempM = new HashSet<Byte>(); tempM.add((byte) 'A'); tempM.add((byte) 'C');
+    	 nucleotide_nomenclature.put((byte) 'M',tempM);
+    	 //K
+    	 HashSet<Byte> tempK = new HashSet<Byte>(); tempK.add((byte) 'G'); tempK.add((byte) 'T');
+    	 nucleotide_nomenclature.put((byte) 'K',tempK);
+    	 //S
+    	 HashSet<Byte> tempS = new HashSet<Byte>(); tempS.add((byte) 'C'); tempS.add((byte) 'G');
+    	 nucleotide_nomenclature.put((byte) 'S',tempS);
+    	 //W
+    	 HashSet<Byte> tempW = new HashSet<Byte>(); tempW.add((byte) 'A'); tempW.add((byte) 'T');
+    	 nucleotide_nomenclature.put((byte) 'W',tempW);
+    	 //H
+    	 HashSet<Byte> tempH = new HashSet<Byte>(); tempH.add((byte) 'A'); tempH.add((byte) 'C'); tempH.add((byte) 'T');
+    	 nucleotide_nomenclature.put((byte) 'H',tempH);
+    	 //B
+    	 HashSet<Byte> tempB = new HashSet<Byte>(); tempB.add((byte) 'C'); tempB.add((byte) 'G'); tempB.add((byte) 'T');
+    	 nucleotide_nomenclature.put((byte) 'B',tempB);
+    	 //V
+    	 HashSet<Byte> tempV = new HashSet<Byte>(); tempV.add((byte) 'A'); tempV.add((byte) 'C'); tempV.add((byte) 'G'); 
+    	 nucleotide_nomenclature.put((byte) 'V',tempV);
+    	 //D
+    	 HashSet<Byte> tempD = new HashSet<Byte>(); tempD.add((byte) 'A'); tempD.add((byte) 'G'); tempD.add((byte) 'T'); 
+    	 nucleotide_nomenclature.put((byte) 'D',tempD);
+    	 //N
+    	 HashSet<Byte> tempN = new HashSet<Byte>(); tempN.add((byte) 'A'); tempN.add((byte) 'C'); tempN.add((byte) 'G'); tempN.add((byte) 'T'); 
+    	 nucleotide_nomenclature.put((byte) 'N',tempN);
+    
+    	 return nucleotide_nomenclature;   	 
+     }
+
+     public static ArrayList<String> readSampleName(String fn){
+    	 ArrayList<String> content = new ArrayList<String>();
+
+         try{
+             BufferedReader br = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
+             String oneline = null;
+             ////read header
+             while((oneline = br.readLine()) != null){
+            	 oneline = oneline.trim();
+            	 if(!oneline.isEmpty())
+            	 {
+            		 content.add(oneline);
+            	 }
+             }
+         } catch(Exception e) {
+             e.printStackTrace();
+         }
+         return content;
+     }
+
+     public static void main(String[] args) { 
+     	
+         String insfn = "";
+         String intfn = "";
+         String inafn = "";
+         String inqfn = "";
+         String informat   = "fasta";
+         String outfn = "";
+         String otype = "insertion";
+
+         String nidname = "label";
+         String attname = "GenName";
+         boolean printDisInfoOnScreen = true;
+
+         _nucleotide_nomenclature = generate_nucleotide_nomenclature();
+         _nucleotide_nomenclature_scoreTable = generate_nucleotide_nomenclature_scoreTable();
+         _nucleotide_nomenclature_map2char = generate_nucleotide_nomenclature_characterTable();
+
+         try{
+        	 intfn = args[0];
+        	 insfn = args[1];
+             inafn = args[2];
+             inqfn = args[3];    
+             informat = args[4];   
+             isMultiplePlacements = Boolean.parseBoolean(args[5]);
+             outfn = args[6];
+             otype = args[7];  
+             printDisInfoOnScreen = Boolean.parseBoolean(args[8]);
+             //"insertion_vcf","insertion_vcf","insertion","placement"
+         	 Runtime run = Runtime.getRuntime();
+             long startTime = System.currentTimeMillis();
+             String output_folder = getFolder(outfn);
+
+             HashMap<Integer, String> queryList = null;
+
+            ///////read vcf file
+      	    if(informat.contains("vcf") || informat.contains("Vcf") || informat.contains("VCF"))
+      	    {
+      	       multationSequencesMap.clear();
+      	       seqIdxMap.clear();
+      	       Arrays.fill(ref_sequence, (byte)'\0');
+      	       readVCFAlignmentFile(insfn);
+      	       readVCFAlignmentFile(inafn);	 
+      	       queryList = readVCFFile2Alignment(inqfn);
+      	    }
+      	    else 
+      	    {
+                  //// Read fasta file 
+                  stringSequencesList.clear();
+                  seqIdxMap.clear();
+                 
+                  ///input msa
+                  readFastaAlignmentFile(insfn);
+                  ///input ancestral
+                  readFastaAlignmentFile(inafn);
+                  ///input query 
+                  queryList = readFastaFile2Alignment(inqfn); 
+      	    }
+
+             NewickImporter tni = new NewickImporter(new FileReader(intfn));
+             Tree tree = tni.importTree(null);
+
+ 			 TIPars myAdd = new TIPars(tree, otype, output_folder);
+             Tree outtree = null;
+             
+             long startTime2 = System.currentTimeMillis();
+             
+             if (otype.equals("insertion") && informat.contains("vcf")) {
+                 ArrayList<Integer> queryIdxs = new ArrayList<Integer>(queryList.keySet());
+                 queryIdxs.sort(Comparator.naturalOrder());
+                 for (int i=0; i<queryIdxs.size(); i++) {
+                 	 int idx = queryIdxs.get(i);
+                     String name = queryList.get(idx);
+                     ConcurrentHashMap<Integer, Byte> query = multationSequencesMap.get(idx);
+                     String qid = "q" + (i+1);
+                     String pid = "p" + (i+1);
+                     outtree = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, 0);
+                     myAdd.mytree = outtree;
+                     myAdd.setupHashtableOfnode2seqName();
+                 }
+             }
+             else if (otype.equals("insertion")) {
+             	ArrayList<Integer> queryIdxs = new ArrayList<Integer>(queryList.keySet());
+                 queryIdxs.sort(Comparator.naturalOrder());
+                 for (int i=0; i<queryIdxs.size(); i++) {
+                 	int idx = queryIdxs.get(i);
+                 	String name = queryList.get(idx);
+                    String query = stringSequencesList.get(idx);
+                    String qid = "q" + (i+1);
+                    String pid = "p" + (i+1);
+                    outtree = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, 0);
+                    myAdd.mytree = outtree;
+                    myAdd.setupHashtableOfnode2seqName();
+                 }
+             } 
+             else if(otype.equals("placement")  && informat.contains("vcf")){
+            	 ArrayList<Integer> queryIdxs = new ArrayList<Integer>(queryList.keySet());
+                 queryIdxs.sort(Comparator.naturalOrder());
+                 placements = new String[queryIdxs.size()];
+                 for (int i=0; i<queryIdxs.size(); i++) {
+                 	 int idx = queryIdxs.get(i);
+                     String name = queryList.get(idx);
+                     ConcurrentHashMap<Integer, Byte> query = multationSequencesMap.get(idx);
+                     String qid = "q" + (i+1);
+                     String pid = "p" + (i+1);
+                     outtree = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, i);
+                  }
+              }
+             else if(otype.equals("placement")){
+             	ArrayList<Integer> queryIdxs = new ArrayList<Integer>(queryList.keySet());
+                 queryIdxs.sort(Comparator.naturalOrder());
+                 placements = new String[queryIdxs.size()];
+                 for (int i=0; i<queryIdxs.size(); i++) {
+                 	int idx = queryIdxs.get(i);
+                 	String name = queryList.get(idx);
+                    String query = stringSequencesList.get(idx);
+                    String qid = "q" + (i+1);
+                    String pid = "p" + (i+1);
+                    outtree = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, i);
+                 }
+             }
+             long endTime2 = System.currentTimeMillis();
+             long totalTime2 = endTime2 - startTime2;
+             
+             if(outtree != null)
+             writeToTree(outtree, outfn, otype);
+
+             long endTime = System.currentTimeMillis();
+             long totalTime = endTime - startTime;
+             
+             System.out.println("Insertion time: " + (double) totalTime2/1000);
+             System.out.println("Overall time: " + (double) totalTime/1000);
+         }
+         catch(Exception e){
+             e.printStackTrace();
+         }
+     }
 }

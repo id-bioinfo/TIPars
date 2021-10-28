@@ -7,22 +7,23 @@ import os
 parser = argparse.ArgumentParser()
 
 parser.add_argument("-t", "--tree", help = "tree file, in Newick format")
-parser.add_argument("-s", "--sequence", help="fasta file contains aligned taxa sequences")
-parser.add_argument("-a", "--ancseq", help="fasta file contains aligned ancestral sequences")
-parser.add_argument("-q", "--query", help="fasta file contains one or multiple query seqence(s)")
-parser.add_argument("-m", "--model", default="LE", help="one of 'LE' (by default), 'JC69' or 'K2P'")
-parser.add_argument("-g", "--gap", default="ignore", help="one of 'ignore', 'inner' or 'all'")
+parser.add_argument("-s", "--sequence", help="fasta/vcf file contains aligned taxa sequences")
+parser.add_argument("-a", "--ancseq", help="fasta/vcf file contains aligned ancestral sequences")
+parser.add_argument("-q", "--query", help="fasta/vcf file contains one or multiple query seqence(s)")
 parser.add_argument("-o", "--output", default="TIPars_output.tree", help="output tree file name")
 parser.add_argument("-p", "--type", default="insertion", help="one of 'insertion' or 'placement'")
+parser.add_argument("-f", "--format", default="fasta", help="one of 'fasta', 'vcf'")
+parser.add_argument("-m", "--multiplacement", default="true", help="one of 'true', 'false'")
+parser.add_argument("-d", "--print2screen", default="true", help="one of 'true', 'false'")
+parser.add_argument("-x", "--xmx", default="8G", help="Java Xmx setting, e.g.,1G,8G")
 
 args = parser.parse_args()
 
 exec_dir = os.path.dirname(__file__)
 ## print(exec_dir)
 
-cmd = "java -jar " + exec_dir + "/TIPars.jar" + " " + args.tree + " " + \
-      args.sequence + " " + args.ancseq + " " + args.query + " " + args.model + \
-      " " + args.gap + " " + args.output + " " + args.type + " 0"
-
+cmd = "java -jar -Xmx" + args.xmx + " " + exec_dir + "/TIPars.jar" + " " + args.tree + " " + \
+      args.sequence + " " + args.ancseq + " " + args.query + " " + args.format + \
+      " " + args.multiplacement + " " + args.output + " " + args.type + " " + args.print2screen
 
 os.system(cmd)
