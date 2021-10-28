@@ -20,45 +20,42 @@ Tommy Tsan-Yuk LAM and Guangchuang YU
 ./tipars -t tree \
 	 -s aligned_taxa_sequence \
          -a aligned_ancestral_sequence \
-	 -q query_sequence \
-	 -m model \
-	 -g gap \
-	 -p type \	 
+	 -q aligned_query_sequence \
 	 -o output_file \
+	 -f sequence_fileFormat (optional) \
+	 -m bestplacement or not (optional) \
+	 -p insertion or placement (optional)\
+	 -x java Xmx setting (optional) \
+	 
 ```
+## demo
+./tipars -t test/testdata/ref.tree -s test/testdata/taxa.fasta -a test/testdata/ancseq.fasta -q test/testdata/query.fasta -o test/testdata/tipars.tree
+
 
 # Option Details
 
-## input files
+## input 
 
-+ `-t`: Provide the file name of reference tree for insertion, in newick format.
-+ `-s`: Provide the file name of alignment of the taxa sequences; The names of sequences should match the taxa names in the reference tree. 
-+ `-a`: Provide the file name of alignment of the ancestral sequences; The names of sequences should match the node labels in the reference tree. 
-+ `-q`: Provide the file name of alignment of query sequence(s). The nucleotides should be in aligned positions with the other input alignments. 
++ `-t`: tree file, in Newick format
++ `-s`: fasta/vcf file contains aligned taxa sequences
++ `-a`: fasta/vcf file contains aligned ancestral sequences
++ `-q`: fasta/vcf file contains one or multiple query seqence(s)
++ `-f`: sequences file format, one of 'fasta' and 'vcf', default(fasta)
 
-## model option
+## output
 
-+ `-m`: Choose the distance model for estimating the branch length (pendant length) of the inserted query sequence
-  + JC69 (Juke-Cantor 1969)
-  + K2P (Kimura two-parameter)
-  + LE (Local estimation using branches of the triplet tree, default)
-+ `-g`: Choose gap treatment method:
-  + `ignore`: ignore all gaps (default)
-  + `inner`: only count inner gaps
-  + `all`: count all gaps as sequence characters
-
-## output file
-
-+ `-o`: output file name (`TIPars_output.tree` by default)
++ `-o`: output tree/jplace file name, default('TIPars_output.tree')
++ `-m`: choose multiplacement('true')(default) or multiplacement('false') for user notices
 + `-p`: algorithm type
   + `insertion` (default) for query sequence(s) insertion
     - output `newick` tree file with query sequence(s) inserted
     - mainly for updating tree
-    - progressively insertions
+    - sequentially insertion
   + `placement` for query sequence(s) placement
     - output `jplace` tree file that incorporates original tree with placement information
     - mainly for query sequence(s) classification
     - independent placement
++ `-d`: print placement result to screen or not (default true)
 
 # Acknowledgements
 
