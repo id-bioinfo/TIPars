@@ -25,6 +25,7 @@ Tommy Tsan-Yuk LAM and Guangchuang YU
 	 -f sequence_fileFormat (optional) \
 	 -m bestplacement or not (optional) \
 	 -p insertion or placement (optional)\
+	 -d print to screen or not (optional) \
 	 -x java Xmx setting (optional) \
 	 
 ```
