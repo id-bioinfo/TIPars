@@ -41,19 +41,19 @@ Tommy Tsan-Yuk LAM and Guangchuang YU
 + `-s`: fasta/vcf file contains aligned taxa sequences
 + `-a`: fasta/vcf file contains aligned ancestral sequences
 + `-q`: fasta/vcf file contains one or multiple query seqence(s)
-+ `-f`: sequences file format, one of 'fasta' and 'vcf', default(fasta)
++ `-f`: sequences file format, one of 'fasta' and 'vcf', default (fasta)
 
 ## output
 
-+ `-o`: output tree/jplace file name, default('TIPars_output.tree')
-+ `-m`: choose multiplacement('true')(default) or multiplacement('false') for user notices
++ `-o`: output tree/jplace file name, default ('TIPars_output.tree')
++ `-m`: choose multiple placement ('true') (default) or single placement ('false') for user notices
 + `-p`: algorithm type
   + `insertion` (default) for query sequence(s) insertion
     - output `newick` tree file with query sequence(s) inserted
     - mainly for updating tree
     - sequentially insertion
   + `placement` for query sequence(s) placement
-    - output `jplace` tree file that incorporates original tree with placement information
+    - output `jplace` file that incorporates original tree with placement information
     - mainly for query sequence(s) classification
     - independent placement
 + `-d`: print placement result to screen or not (default true)
