@@ -1986,12 +1986,16 @@ public class TIPars{
     		switch(key){
     		    case 'A' :
     		    	nucleotides.set(3);
+					break;
     		    case 'T' :
     		    	nucleotides.set(2);
+					break;
     		    case 'C':
     		    	nucleotides.set(1);
+					break;
     		    case 'G':
     		    	nucleotides.set(0);
+					break;
     		    default : 
     		}
 		}
@@ -2006,12 +2010,16 @@ public class TIPars{
     		switch(key){
     		    case 'A' :
     		    	nucleotides.set(3);
+					break;
     		    case 'T' :
     		    	nucleotides.set(2);
+					break;
     		    case 'C':
     		    	nucleotides.set(1);
+					break;
     		    case 'G':
     		    	nucleotides.set(0);
+					break;
     		    default : 
     		}
 		}
