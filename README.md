@@ -26,7 +26,7 @@ a local estimation model. An example of a single query sequence is illustrated i
 In case where multiple branches will result into the same minimal substitution score, 
 TIPars applies simple yet practical rules to filter them. For details of the algorithm, 
 please refer to our preprint of this work (link to be provided). 
-For the required input data ancestral sequence reconstruction was done using an in-house 
+For the required input data ancestral sequence reconstruction would be done using an in-house 
 script with PastML [^3] ([link](https://github.com/id-bioinfo/TIPars/tree/master/reconstrcutAncestralSeq)).
 Other methods such as ML joint or marginal methods (such as those available in HYPHY [^4]) 
 are also acceptable. TIPars accepts both Fasta and Vcf file formats for input sequences. 
@@ -49,7 +49,7 @@ make
 ```bash
 ./tipars -t tree \
 	 -s aligned_taxa_sequence \
-     -a aligned_ancestral_sequence \
+         -a aligned_ancestral_sequence \
 	 -q aligned_query_sequence \
 	 -o output_file \
 	 -f sequence_fileFormat (optional) \
@@ -63,7 +63,7 @@ make
 ## toy test
 
 ```bash
-./tipars -t test/testdata/1k_sars2_ref.tree -s test/testdata/1k_sars2_taxa.fasta -a test/testdata/1k_sars2_ancseq.fasta -q test/testdata/1k_sars2_query.fasta -o test/testdata/tipars.tree
+./tipars -t test/sars2_1k/ref.tree -s test/sars2_1k/taxa.fasta -a test/sars2_1k/ancseq.fasta -q test/sars2_1k/query.fasta -o test/sars2_1k/tipars.tree
 ```
 
 # Option Details
@@ -74,13 +74,13 @@ make
 + `-s`: fasta/vcf file contains aligned taxa sequences
 + `-a`: fasta/vcf file contains aligned ancestral sequences
 + `-q`: fasta/vcf file contains one or multiple query seqence(s)
-+ `-f`: sequences file format, one of 'fasta' and 'vcf', default(fasta)
-+ `-x`: java Xmx setting, e.g.,1G,4G,8G, default(8G)
++ `-f`: sequences file format, one of 'fasta' and 'vcf', default (fasta)
++ `-x`: java Xmx setting, e.g.,1G,4G,8G, default (8G)
 
 ## output
 
-+ `-o`: output tree/jplace file name, default('TIPars_output.tree')
-+ `-m`: choose bestplacement('true')(default) or single best placement('false') for user notices
++ `-o`: output tree/jplace file name, default ('TIPars_output.tree')
++ `-m`: choose bestplacement ('true') (default) or single best placement ('false') for user notices
 + `-p`: algorithm type
   + `insertion` (default) for query sequence(s) insertion
     - output `newick` tree file with query sequence(s) inserted
