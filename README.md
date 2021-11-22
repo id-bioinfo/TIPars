@@ -31,6 +31,7 @@ script with PastML [^3] ([link](https://github.com/id-bioinfo/TIPars/tree/master
 Other methods such as ML joint or marginal methods (such as those available in HYPHY [^4]) 
 are also acceptable. TIPars accepts both Fasta and Vcf file formats for input sequences. 
 To convert a Fasta file to a Vcf file, it is suggested to use a Python package PoMo/FastaToVCF.py [^5] ([link](https://github.com/pomo-dev/PoMo/blob/master/scripts/FastaToVCF.py)).
+
 <img src="/img/illustration.png" width="600">
 
 # Installation
