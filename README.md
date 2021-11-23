@@ -20,7 +20,8 @@ Yongtao Ye, Marcus Shum, Joseph Tsui, Guangchuang Yu, Tommy Lam
 # How It Works 
 
 Given the multiple sequence alignments of taxa and ancestral sequences for an existing reference phylogenetic tree, 
-TIPars computes the substitution scores of the query sequence against all branches in the tree and searches 
+TIPars computes the substitution scores of the query sequence against all branches in the tree 
+based on a specific nucleotide ambiguity code substitution matrix and searches 
 for the minimal branch as the best insertion position. Length of new branches will be recalculated based on 
 a local estimation model. An example of a single query sequence is illustrated in Figure 1. 
 In case where multiple branches will result into the same minimal substitution score, 
