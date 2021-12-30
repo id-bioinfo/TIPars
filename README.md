@@ -2,9 +2,8 @@
 
 TIPars is JAVA program to do fast and accurate insertion or placement of new samples onto 
 a reference phylogenetic tree based on parsimony criterion and utilized the pre-computed ancestral sequences. 
-It is reliable for phylogenies comprise both densely sampled sequences (very short tree branches) 
-and divergent sequences (long tree branches), such as SARS-CoV-2 genomes, bacterial 16S ribosomal RNA sequences, 
-Influenza viruses and Newcastle disease virus. 
+It is reliable for phylogenies comprise both densely sampled sequences (very short tree branches), e.g. SARS-CoV-2 genomes and Influenza viruses,
+and divergent sequences (long tree branches), e.g. bacterial 16S ribosomal RNA sequences and Newcastle disease virus. 
 It uses BEAST library [^1] and requires taxa sequences, the reference tree, 
 and ancestral sequences of all its internal nodes as input data. 
 Reference tree is maintained unchanged (except that a new branch added) in the insertion process. 
