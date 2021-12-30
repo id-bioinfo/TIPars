@@ -62,7 +62,7 @@ make
 ## toy test
 
 A small SARS-CoV-2 dataset with 1340 sequences is provided for a toy test. 
-Due to GISAID's data sharing policy, the sequences downloaded from GISAID (https://www.gisaid.org/) are only provided Accession Numbers.
+Due to GISAID's data sharing policy, only Accession Numbers are provided for the sequences downloaded from GISAID (https://www.gisaid.org/).
 Any problems about the generation of the input data, please send email to tipars@d24h.hk.
 
 ```bash
@@ -97,7 +97,9 @@ Any problems about the generation of the input data, please send email to tipars
 # Benchmark datasets
 
 The benchmark datasets used for this study can be referred on the folder `Benchmark datasets`([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark%20datasets)),
-including 16S, H3N2, NDV, SARS2-100k and SARS2-660k. Due to GISAID's data sharing policy, the sequences downloaded from GISAID are only provided Accession Numbers.
+including 16S, H3N2, NDV, SARS2-100k and SARS2-660k (tree file and alignment files of taxa and ancestral sequences).
+Due to GISAID's data sharing policy, only Accession Numbers are provided for the sequences downloaded from GISAID.
+For the reference tree of SARS2-660k, please refer to the phylogeny (dated on 6 September 2021) under Audacity from GISAID.
 
 # Acknowledgements
 
