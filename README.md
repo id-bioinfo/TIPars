@@ -1,17 +1,15 @@
-# Taxa Insertion using Parsimony and Ancestral Reconstructed Sequences (TIPars)
+# Robust expansion of phylogeny for fast-growing genome sequence data
 
 TIPars is JAVA program to do fast and accurate insertion or placement of new samples onto 
 a reference phylogenetic tree based on parsimony criterion and utilized the pre-computed ancestral sequences. 
 It is reliable for phylogenies comprise both densely sampled sequences (very short tree branches) 
 and divergent sequences (long tree branches), such as SARS-CoV-2 genomes, bacterial 16S ribosomal RNA sequences, 
 Influenza viruses and Newcastle disease virus. 
-It uses BEAST library [^1] and requires taxon sequence sequences, the reference tree, 
-and (ancestral) sequences of all its internal nodes as input data. 
+It uses BEAST library [^1] and requires taxa sequences, the reference tree, 
+and ancestral sequences of all its internal nodes as input data. 
 Reference tree is maintained unchanged (except that a new branch added) in the insertion process. 
 TIPars can do insertion of single or multiple new sequences with Newick format tree file as output, 
 but can also obtain phylogenetic placement of the query sequences by generating Jplace format file [^2] for other downstream analyses. 
-
-If there is any question about using TIPars, please send email to tipars@d24h.hk.
 
 # Authors
 
@@ -20,9 +18,8 @@ Yongtao Ye, Marcus Shum, Joseph Tsui, Guangchuang Yu, Tommy Lam
 # How It Works 
 
 Given the multiple sequence alignments of taxa and ancestral sequences for an existing reference phylogenetic tree, 
-TIPars computes the substitution scores of the query sequence against all branches in the tree 
-based on a specific nucleotide ambiguity code substitution matrix and searches 
-for the minimal branch as the best insertion position. Length of new branches will be recalculated based on 
+TIPars computes the substitution scores of the query sequence against all branches in the tree based on a specific substitution scoring table based on the IUPAC nucleotide ambiguity codes 
+and searches for the minimal branch as the best insertion position. Length of new branches will be recalculated based on 
 a local estimation model. An example of a single query sequence is illustrated in Figure 1. 
 In case where multiple branches will result into the same minimal substitution score, 
 TIPars applies simple yet practical rules to filter them. For details of the algorithm, 
@@ -64,6 +61,10 @@ make
 
 ## toy test
 
+A small SARS-CoV-2 dataset with 1340 sequences is provided for a toy test. 
+Due to GISAID's data sharing policy, the sequences downloaded from GISAID (https://www.gisaid.org/) are only provided Accession Numbers.
+Any problems about the generation of the input data, please send email to tipars@d24h.hk.
+
 ```bash
 ./tipars -t test/sars2_1k/ref.tree -s test/sars2_1k/taxa.fasta -a test/sars2_1k/ancseq.fasta -q test/sars2_1k/query.fasta -o test/sars2_1k/tipars.tree
 ```
@@ -92,6 +93,11 @@ make
     - output `jplace` tree file that incorporates original tree with placement information
     - mainly for query sequence(s) classification
     - independent placement
+
+# Benchmark datasets
+
+The benchmark datasets used for this study can be referred on the folder `Benchmark datasets`([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark%20datasets)),
+including 16S, H3N2, NDV, SARS2-100k and SARS2-660k. Due to GISAID's data sharing policy, the sequences downloaded from GISAID are only provided Accession Numbers.
 
 # Acknowledgements
 
