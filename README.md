@@ -62,7 +62,7 @@ make
 ## toy test
 
 A small SARS-CoV-2 dataset with 1340 sequences is provided for a toy test. 
-Due to GISAID's data sharing policy, only Accession Numbers are provided for the sequences downloaded from GISAID (https://www.gisaid.org/).
+Due to GISAID's data sharing policy [^6], only Accession Numbers are provided for the sequences downloaded from GISAID (https://www.gisaid.org/).
 Any problems about the generation of the input data, please send email to tipars@d24h.hk.
 
 ```bash
@@ -112,3 +112,4 @@ the Health and Medical Research Fund (COVID1903011-549 WP1) and the Innovation a
 [^3]: Ishikawa, S.A., et al., A Fast Likelihood Method to Reconstruct and Visualize Ancestral Scenarios. Molecular Biology and Evolution, 2019. 36(9): p. 2069-2085.
 [^4]: Kosakovsky Pond, S.L., et al., HyPhy 2.5-A Customizable Platform for Evolutionary Hypothesis Testing Using Phylogenies. Molecular Biology and Evolution, 2020. 37(1): p. 295-299.
 [^5]: Schrempf, D., et al., Reversible polymorphism-aware phylogenetic models and their application to tree inference. J Theor Biol, 2016. 407: p. 362-370.
+[^6]: Shu Y, McCauley J. GISAID: Global initiative on sharing all influenza data - from vision to reality. Euro Surveill. 2017. 22(13): p. 30494.
