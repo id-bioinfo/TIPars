@@ -98,9 +98,13 @@ Any problems about the generation of the input data, please send email to tipars
 # Benchmark datasets
 
 The benchmark datasets used for this study can be referred on the folder `Benchmark datasets`([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark%20datasets)),
-including 16S, H3N2, NDV, SARS2-100k and SARS2-660k. Both the tree file and alignment files of taxa and ancestral sequences are availible except SARS-CoV-2 datasets.
+including 16S, H3N2, NDV, SARS2-100k and SARS2-660k. Both the tree file and alignment files of taxa and ancestral sequences are available except SARS-CoV-2 datasets.
 Due to GISAID's data sharing policy, only Accession Numbers are provided for the sequences downloaded from GISAID.
 For the reference tree of SARS2-660k, please refer to the phylogeny (dated on 6 September 2021) under Audacity from GISAID.
+
+# How to Cite
+
+Preprint / publication link will be updated soon.
 
 # Acknowledgements
 
