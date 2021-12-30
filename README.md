@@ -10,6 +10,8 @@ Reference tree is maintained unchanged (except that a new branch added) in the i
 TIPars can do insertion of single or multiple new sequences with Newick format tree file as output, 
 but can also obtain phylogenetic placement of the query sequences by generating Jplace format file [^2] for other downstream analyses. 
 
+If there is any question about using TIPars, please send email to tipars@d24h.hk.
+
 # Authors
 
 Yongtao Ye, Marcus Shum, Joseph Tsui, Guangchuang Yu, Tommy Lam
