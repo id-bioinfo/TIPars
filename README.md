@@ -17,7 +17,7 @@ Yongtao Ye, Marcus Shum, Joseph Tsui, Guangchuang Yu, Tommy Lam
 # How It Works 
 
 Given the multiple sequence alignments of taxa and ancestral sequences for an existing reference phylogenetic tree, 
-TIPars computes the substitution scores of the query sequence against all branches in the tree based on a specific substitution scoring table based on the IUPAC nucleotide ambiguity codes 
+TIPars computes the substitution scores of the query sequence against all branches in the tree using a specific substitution scoring table based on the IUPAC nucleotide ambiguity codes 
 and searches for the minimal branch as the best insertion position. Length of new branches will be recalculated based on 
 a local estimation model. An example of a single query sequence is illustrated in Figure 1. 
 In case where multiple branches will result into the same minimal substitution score, 
@@ -96,7 +96,7 @@ Any problems about the generation of the input data, please send email to tipars
 # Benchmark datasets
 
 The benchmark datasets used for this study can be referred on the folder `Benchmark datasets`([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark%20datasets)),
-including 16S, H3N2, NDV, SARS2-100k and SARS2-660k (tree file and alignment files of taxa and ancestral sequences).
+including 16S, H3N2, NDV, SARS2-100k and SARS2-660k. Both the tree file and alignment files of taxa and ancestral sequences are availible except SARS-CoV-2 datasets.
 Due to GISAID's data sharing policy, only Accession Numbers are provided for the sequences downloaded from GISAID.
 For the reference tree of SARS2-660k, please refer to the phylogeny (dated on 6 September 2021) under Audacity from GISAID.
 
