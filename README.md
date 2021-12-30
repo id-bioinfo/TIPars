@@ -101,7 +101,8 @@ including 16S, H3N2, NDV, SARS2-100k and SARS2-660k. Due to GISAID's data sharin
 
 # Acknowledgements
 
-This project is supported by Hong Kong Research Grants Council General Research Fund (17150816), NSFC Excellent Young Scientists Fund (Hong Kong and Macau) (31922087), and the Innovation and Technology Commission’s InnoHK funding (D<sup>2</sup>4H)
+This project is supported by Hong Kong Research Grants Council General Research Fund (17150816), NSFC Excellent Young Scientists Fund (Hong Kong and Macau) (31922087),
+Health and Medical Research Fund (COVID1903011-549 WP1) and the Innovation and Technology Commission’s InnoHK funding (D<sup>2</sup>4H)
 
 # Reference
 [^1]: Suchard, M.A., et al. Bayesian phylogenetic and phylodynamic data integration using BEAST 1.10. Virus evolution, 2018.
