@@ -24,7 +24,7 @@ and searches for the minimal branch as the best insertion position. Length of ne
 a local estimation model. An example of a single query sequence is illustrated in Figure 1. 
 In case where multiple branches will result into the same minimal substitution score, 
 TIPars applies simple yet practical rules to filter them. For details of the algorithm, 
-please refer to our preprint of this work (link to be provided). 
+please refer to our preprint of this work ([link](https://www.biorxiv.org/content/10.1101/2021.12.30.474610v1)).
 For the required input data ancestral sequence reconstruction would be done using an in-house 
 script with PastML [^3] ([link](https://github.com/id-bioinfo/TIPars/tree/master/reconstrcutAncestralSeq)).
 Other methods such as ML joint or marginal methods (such as those available in HYPHY [^4]) 
@@ -104,7 +104,8 @@ For the reference tree of SARS2-660k, please refer to the phylogeny (dated on 6 
 
 # How to Cite
 
-Preprint / publication link will be updated soon.
+Yongtao Ye, Marcus Shum, Joseph Tsui, Guangchuang Yu, David Smith, Huachen Zhu, Joseph Wu, Yi Guan, Tommy Tsan-Yuk Lam. Robust expansion of phylogeny for fast-growing genome sequence data.
+bioRxiv 2021.12.30.474610; doi: https://doi.org/10.1101/2021.12.30.474610
 
 # Acknowledgements
 
