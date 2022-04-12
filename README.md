@@ -62,12 +62,11 @@ make
 
 ## toy test
 
-A small SARS-CoV-2 dataset with 1340 sequences is provided for a toy test. 
-Due to GISAID's data sharing policy [^6], only Accession Numbers are provided for the sequences downloaded from GISAID (https://www.gisaid.org/).
-Any problems about the generation of the input data, please send email to tipars@d24h.hk.
+A H3N2 dataset with 800 HA genes is provided for a toy test. 
+Any problems about the usage of TIPars, please send email to tipars@d24h.hk.
 
 ```bash
-./tipars -t test/sars2_1k/ref.tree -s test/sars2_1k/taxa.fasta -a test/sars2_1k/ancseq.fasta -q test/sars2_1k/query.fasta -o test/sars2_1k/tipars.tree
+./tipars -t Benchmarkdatasets/H3N2/H3N2_tree.nwk -s Benchmarkdatasets/H3N2/H3N2_taxa.fas -a Benchmarkdatasets/H3N2/H3N2_anc.fas -q Benchmarkdatasets/H3N2/H3N2_query.fas -o Benchmarkdatasets/H3N2/tipars.tree
 ```
 
 # Option Details
