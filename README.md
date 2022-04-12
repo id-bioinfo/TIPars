@@ -62,12 +62,15 @@ make
 
 ## toy test
 
-A H3N2 dataset with 800 HA genes is provided for a toy test at the folder `Benchmark datasets/H3N2` ([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark%20datasets/H3N2)). 
+A small SARS-CoV-2 dataset with 1340 sequences is provided for a toy test. 
+Due to GISAID's data sharing policy [^6], only Accession Numbers are provided for the sequences downloaded from GISAID (https://www.gisaid.org/).
+
+If you just want to have a try on TIPars, regardness of SARS2, we recommend you to test on our H3N2 completed benchmark dataset at the folder `Benchmark datasets/H3N2` ([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark%20datasets/H3N2)). 
 
 Any problems about the usage of TIPars, please send email to tipars@d24h.hk.
 
 ```bash
-./tipars -t Benchmarkdatasets/H3N2/H3N2_tree.nwk -s Benchmarkdatasets/H3N2/H3N2_taxa.fas -a Benchmarkdatasets/H3N2/H3N2_anc.fas -q Benchmarkdatasets/H3N2/H3N2_query.fas -o Benchmarkdatasets/H3N2/tipars.tree
+./tipars -t test/sars2_1k/ref.tree -s test/sars2_1k/taxa.fasta -a test/sars2_1k/ancseq.fasta -q test/sars2_1k/query.fasta -o test/sars2_1k/tipars.tree
 ```
 
 # Option Details
