@@ -1,6 +1,6 @@
-# Reconstrcut Ancestral Sequences using PastML
+# Reconstruct Ancestral Sequences using PastML
 
-reconstrcutAncestralSeq.pl is an in-house perl script to reconstrcut ancestral sequences using PastML.
+reconstructAncestralSeq.pl is an in-house perl script for reconstructing ancestral sequences using PastML.
 
 # Authors
 
@@ -8,17 +8,17 @@ Marcus Shum
 
 # Dependency
 
-To run reconstrcutAncestralSeq.pl, please first install [PastML](https://github.com/evolbioinfo/pastml) [^1] and [ETE3](http://etetoolkit.org/new_download/) [^2]
+To run reconstructAncestralSeq.pl, please first install [PastML](https://github.com/evolbioinfo/pastml) [^1] and [ETE3](http://etetoolkit.org/new_download/) [^2]
 using Python2.
 
 # Quick Usage
 
-perl reconstrcutAncestralSeq.pl
+perl reconstructAncestralSeq.pl
 
 ## toy test
 
 ```bash
-perl reconstrcutAncestralSeq.pl
+perl reconstructAncestralSeq.pl
 ```
 PLESAE CONFIRMED THAT YOU HAVE INSTALLED:
 1. PastML (https://pastml.pasteur.fr/)
@@ -26,7 +26,7 @@ PLESAE CONFIRMED THAT YOU HAVE INSTALLED:
 3. Python2 (NOT!!3!!!)
 4. The In-house python script of the TREEMANUPULATION is under the SAME directory
 
-Beforing using this script
+Before using this script
 If you have confirmed that you have downloaded the above programs, please click "Enter" to proceed...
 ```bash
 press 'Enter' button
