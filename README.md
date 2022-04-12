@@ -62,7 +62,8 @@ make
 
 ## toy test
 
-A H3N2 dataset with 800 HA genes is provided for a toy test. 
+A H3N2 dataset with 800 HA genes is provided for a toy test at the folder `Benchmark datasets/H3N2`. 
+
 Any problems about the usage of TIPars, please send email to tipars@d24h.hk.
 
 ```bash
