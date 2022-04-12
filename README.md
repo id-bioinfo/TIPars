@@ -65,7 +65,7 @@ make
 A small SARS-CoV-2 dataset with 1340 sequences is provided for a toy test. 
 Due to GISAID's data sharing policy [^6], only Accession Numbers are provided for the sequences downloaded from GISAID (https://www.gisaid.org/).
 
-If you just want to have a try on TIPars, regardness of SARS2, we recommend you to test on our H3N2 completed benchmark dataset at the folder `Benchmark datasets/H3N2` ([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark%20datasets/H3N2)). 
+If you just want to have a try on TIPars, regardness of SARS2, we recommend you to test on our NDV completed benchmark dataset at the folder `Benchmark datasets/NDV` ([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark%20datasets/NDV)). 
 
 Any problems about the usage of TIPars, please send email to tipars@d24h.hk.
 
