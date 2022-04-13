@@ -26,7 +26,7 @@ In case where multiple branches will result into the same minimal substitution s
 TIPars applies simple yet practical rules to filter them. For details of the algorithm, 
 please refer to our preprint of this work ([link](https://www.biorxiv.org/content/10.1101/2021.12.30.474610v1)).
 For the required input data ancestral sequence reconstruction would be done using an in-house 
-script with PastML [^3] ([link](https://github.com/id-bioinfo/TIPars/tree/master/reconstrcutAncestralSeq)).
+script with PastML [^3] ([link](https://github.com/id-bioinfo/TIPars/tree/master/reconstructAncestralSeq)).
 Other methods such as ML joint or marginal methods (such as those available in HYPHY [^4]) 
 are also acceptable. TIPars accepts both Fasta and Vcf file formats for input sequences. 
 To convert a Fasta file to a Vcf file, it is suggested to use a Python package PoMo/FastaToVCF.py [^5] ([link](https://github.com/pomo-dev/PoMo/blob/master/scripts/FastaToVCF.py)).
