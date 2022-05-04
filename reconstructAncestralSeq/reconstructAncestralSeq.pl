@@ -27,18 +27,27 @@ my $k;				##Dummy Variable for looping;
 my $m;				##Dummy Variable for looping;
 my $nucl;			##Variable to hold nucleotide character in creating the file for PASTML
 ###########################
-
+print $ARGV[0]."\n";
+print $ARGV[1]."\n";
+print $ARGV[2]."\n";
+print $ARGV[3]."\n";
 print "PLESAE CONFIRMED THAT YOU HAVE INSTALLED:\n1. PastML (https://pastml.pasteur.fr/)\n2. ETE3 (http://etetoolkit.org/download/)\n3. Python2 (NOT!!3!!!)\n4. The In-house python script of the TREEMANUPULATION is under the SAME directory\n\nBeforing using this script\n";
 print "If you have confirmed that you have downloaded the above programs, please click \"Enter\" to proceed...\n";
-$click=<STDIN>;
-print "Please type in the name of/full path to the tree file(in newick format): \n";
-my $tree = <STDIN>;	##Defined tree file input
+# $click=<STDIN>;
+# print "Please type in the name of/full path to the tree file(in newick format): \n";
+my $tree = $ARGV[0];	##Defined tree file input
 chomp2 $tree;
 open(TREE, "$tree");
-print "Please type in the name of/full path to the sequence file(in single-lined fasta format): \n";
-my $fasta = <STDIN>;	##Defined fasta file input
+# print "Please type in the name of/full path to the sequence file(in single-lined fasta format): \n";
+my $fasta = $ARGV[1];	##Defined fasta file input
 chomp2 $fasta;
 open(FASTA, "$fasta");
+
+# get desired output file path
+# print "Please type in the full file path(with name ends with tree) of the ouptut tree with innode: \n";
+my $outtree = $ARGV[2];
+# print "Please type in the full file lspath(with name ends with fasta) of the ouptut accestral sequence fasta: \n";
+my $outanc = $ARGV[3];
 
 print "Step1: READING IN FASTA FILE... \n\n";
 $i=0;
@@ -129,14 +138,14 @@ for($m =0; $m<$length;$m++){
 print "FILE GENERATION FOR PASTML COMPLETED!!!\n\n";
 
 print "Step3: ADDITION OF INNODE NAME TO TREE FILE...\n\n";
-$cmd = "python2 TREEMANUPULATION_AddInnodeNameToTreeByArgument.py ".$tree;
+$cmd = "source activate ete3-py2 && python /code/TIPars/reconstructAncestralSeq/TREEMANUPULATION_AddInnodeNameToTreeByArgument.py ".$tree." && source deactivate";
 $cpd = `$cmd`;
 print "Addition of Name Completed!!!\n\n";
 
 print "Step4: START RUNNING PASTML......\n\n";
 
 for($i=1;$i<$y;$i++){
-	$cmd = "pastml --tree ".$tree."_InnodeNameAdded --data position_".$i.".txt --columns NUCL --prediction_method ACCTRAN --work_dir position_".$i."_generated.txt";
+	$cmd = "source activate pastml-py3 && pastml --tree ./".$tree."_InnodeNameAdded --data position_".$i.".txt --columns NUCL --prediction_method ACCTRAN --work_dir position_".$i."_generated.txt && source deactivate";
 	$cpd = `$cmd`;
 }
 
@@ -509,6 +518,13 @@ for($i=0;$i<$y;$i++){
 	$cmd = "rm -rf position_".$i."_generated.txt";
 	$cpd = `$cmd`;
 }
+
+# move output files to designated location
+$cmd = "mv -f ./".$tree."_InnodeNameAdded ".$outtree;
+$cpd = `$cmd`;
+$cmd = "mv -f ./".$ancseq_file." ".$outanc;
+$cpd = `$cmd`;
+
 
 print "!!! PLEASE USE THE FILE \"\*TREE.FILE\*_InnodeNameAdded\"  AND \"ancestral_sequence.fasta\" FOR TIPars Step. !!!\n\n";
 print "Finished All Process!!! Thank you for using!!!\n\n";
