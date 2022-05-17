@@ -1,0 +1,17 @@
+biopython==1.79
+certifi==2021.5.30
+charset-normalizer==2.0.12
+ete3==3.1.2
+idna==3.3
+itolapi==4.1.0
+Jinja2==3.0.3
+MarkupSafe==2.0.1
+numpy==1.19.5
+pandas==1.1.5
+pastml==1.9.34
+python-dateutil==2.8.2
+pytz==2022.1
+requests==2.27.1
+scipy==1.5.4
+six==1.16.0
+urllib3==1.26.9

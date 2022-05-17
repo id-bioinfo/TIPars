@@ -11,6 +11,13 @@ Marcus Shum
 To run reconstructAncestralSeq.pl, please first install [PastML](https://github.com/evolbioinfo/pastml) [^1] and [ETE3](http://etetoolkit.org/new_download/) [^2]
 using Python2.
 
+# Ancestral sequence setup using conda and pip
+1. Download Miniconda/Anaconda
+2. Create conda env by running: `conda env create -f ete3-py2-env.yml`
+3. Create another conda env by running: `conda env create --name pastml-py3 python=3.6`
+4. Run the following command: `conda activate pastml-py3 && pip install -r pastml-py3-req.txt && conda deactivate`
+5. Try to test run by using command: `perl reconstructAncestralSeq.pl trial.tree trial.fasta output.tree output.fasta`, and the result is inside the `output.tree` and `output.fasta` files.
+
 # Quick Usage
 
 perl reconstructAncestralSeq.pl
