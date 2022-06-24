@@ -1,80 +1,83 @@
-# Reconstruct Ancestral Sequences using PastML
+# Reconstrcut Ancestral Sequences using PastML
 
-reconstructAncestralSeq.pl is an in-house perl script for reconstructing ancestral sequences using PastML.
+ReconstrcutAncestralSeqByPastML.pl is a perl script to reconstrcut ancestral sequences using PastML
+that includes two additional in-house scripts for adding names (INNODE1...INNODEN) for internal nodes of the tree 
+and generating the annotation files as input for PastML.
+
 
 # Authors
 
-Marcus Shum
+Yongtao Ye and Marcus Shum
 
 # Dependency
 
-To run reconstructAncestralSeq.pl, please first install [PastML](https://github.com/evolbioinfo/pastml) [^1] and [ETE3](http://etetoolkit.org/new_download/) [^2]
-using Python2.
+To run ReconstrcutAncestralSeqByPastML.pl, please first install [PastML](https://github.com/evolbioinfo/pastml) [^1] and [ETE3](http://etetoolkit.org/new_download/) [^2]
+using Python3 as well as OpenMP for our in-house c++ script.
+
+# How It Works 
+
+ReconstrcutAncestralSeqByPastML.pl includes three steps.
+
+1) Generate an annotation table specifying tip states (nucleotide or amino acid) by extracting each column in the MSA of taxa, 
+using the in-house c++ program `splitEachColumn` that uses OpenMP for parallelization.
+
+2) Add names as INNODE1 to INNODEN (N is the number of internal nodes) for the input tree (should be rooted)
+by the in-house python3 script `TREEMANUPULATION_AddInnodeNameToTreeByArgument.py` using ETE3.
+
+3) Reconstrcut the ancestral sequences using PastML parallelly.
 
 # Quick Usage
 
-perl reconstructAncestralSeq.pl
+`perl ReconstrcutAncestralSeqByPastML.pl <tree.nwk> <taxaMSA.fas> <outdir> <numberthreads>`
+
+## input 
+1) tree.nwk: Newick format tree file
+  
+2) taxaMSA.fas: fasta file contains aligned taxa sequences
+  
+3) outdir: output directory
+  
+4) numberthreads: an integer for number of threads to use
+
+## output 
+All output files are in the input path of <outdir>.
+  
+1) ancestral_sequence.fasta: ancestral sequences constructed by PastML
+  
+2) <tree.nwk>\_InnodeNameAdded: the tree file with added internal node names
+  
+3) <tree.nwk>\_ancestor: a tsv file indicating two ends of each branch and its branch length
 
 ## toy test
 
 ```bash
-perl reconstructAncestralSeq.pl
+perl ReconstrcutAncestralSeqByPastML.pl 16S_tree.nwk 16S_taxa.fas outdir 8
 ```
+
+Messages printed out to screen should be as follow.
+ 
 PLESAE CONFIRMED THAT YOU HAVE INSTALLED:
 1. PastML (https://pastml.pasteur.fr/)
 2. ETE3 (http://etetoolkit.org/download/)
-3. Python2 (NOT!!3!!!)
-4. The In-house python script of the TREEMANUPULATION is under the SAME directory
+3. Python3 and Perl5 (or above)
+4. The in-house script for adding internal node names (TREEMANUPULATION)
+5. The in-house script for generating statefiles for PastML (splitEachColumn)
+Both above in-house scripts should be under the SAME directory.
 
-Before using this script
-If you have confirmed that you have downloaded the above programs, please click "Enter" to proceed...
-```bash
-press 'Enter' button
-```
-Please type in the name of/full path to the tree file(in newick format):
-```bash
-trial.tree
-```
-Please type in the name of/full path to the sequence file(in single-lined fasta format):
-```bash
-trial.fasta
-```
-Step1: READING IN FASTA FILE...
-
-FINISH READING IN FASTA FILE!!!
-
-Step2: NOW GENERATING TABLE FILE FOR PASTML...
-
-position: 1/8
-position: 2/8
-position: 3/8
-position: 4/8
-position: 5/8
-position: 6/8
-position: 7/8
-position: 8/8
+Step1: GENERATING TABLE FILE FOR PASTML...
+Processing used 0.648938894271851 seconds
 FILE GENERATION FOR PASTML COMPLETED!!!
 
-Step3: ADDITION OF INNODE NAME TO TREE FILE...
-
-
-Tree Innode Name Addtion COMPLETED
+Step2: ADDITION OF INNODE NAME TO TREE FILE...
+Processing used 10.8755230903625 seconds
 Addition of Name Completed!!!
 
-Step4: START RUNNING PASTML......
-
+Step3: START RUNNING PASTML......
+Processing used 81.2306489944458 seconds
 Finished Running PASTML!!!
 
-Step5: START TO COMBINE PASTML RESULT...
-
-1
-2
-3
-4
-5
-6
-7
-8
+Step4: START TO COMBINE PASTML RESULT...
+Processing used 11.9872329235077 seconds
 Printing Out the Ancestral Sequence...
 
 Finished All Process!!! Thank you for using!!!
