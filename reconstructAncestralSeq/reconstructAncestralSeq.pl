@@ -1,6 +1,16 @@
 #####Copyright Owned by Marcus Shum, 01/01/2019######
+
+#####Edited by Yongtao Ye, 20/06/2022######
+##1) be parallel to run PastML
+##2) change to python3 for add-node script(TREEMANUPULATION_AddInnodeNameToTreeByArgument.py)
+##3) apply another script (splitEachColumn using C++) to generating statefiles for PastML
+
+
+use threads;
 use strict;
 use Data::Dumper qw(Dumper);
+use Time::HiRes qw(gettimeofday);
+
 sub chomp2{ $_[0] =~ s/[\n\r]//gi; }
 
 ##Definition of variables##
@@ -10,7 +20,6 @@ my %sequence;		##Hash table for the fasta sequence of each taxa, HashTable
 my $i;				##dummy variable for counting, Integer
 my %names;			##Hash table for memorizing the name of the taxa based on the appearing sequence in the Fasta file input, HashTable
 my $length;			##Record the length of the MSA, Integer
-my $y;				##Dummy variable for counting in file creation, Integer
 my $new;			##Variable for file read-write, FilePointer
 my $cmd;			##To store the bash command to run, String
 my $cpd;			##To perform $cmd, String
@@ -24,131 +33,102 @@ my %seq;			##Hash Table for storing the rescontructed sequence from PastML resul
 my $key;			##Dummy Variable for hash table looping, String
 my $click;			##Dummy Variable for click checking
 my $k;				##Dummy Variable for looping;
-my $m;				##Dummy Variable for looping;
 my $nucl;			##Variable to hold nucleotide character in creating the file for PASTML
 ###########################
+my $numArgs = $#ARGV + 1;
+if ($numArgs != 4) {
+    print "\nUsage: ReconstrcutAncestralSeqByPastML.pl tree.nwk taxaMSA.fas outdir numberthreads\n";
+    exit;
+}
 
-print "PLESAE CONFIRMED THAT YOU HAVE INSTALLED:\n1. PastML (https://pastml.pasteur.fr/)\n2. ETE3 (http://etetoolkit.org/download/)\n3. Python2 (NOT!!3!!!)\n4. The In-house python script of the TREEMANUPULATION is under the SAME directory\n\nBeforing using this script\n";
-print "If you have confirmed that you have downloaded the above programs, please click \"Enter\" to proceed...\n";
-$click=<STDIN>;
-print "Please type in the name of/full path to the tree file(in newick format): \n";
-my $tree = <STDIN>;	##Defined tree file input
+print "PLESAE CONFIRMED THAT YOU HAVE INSTALLED:\n1. PastML (https://pastml.pasteur.fr/)\n2. ETE3 (http://etetoolkit.org/download/)\n3. Python3 and Perl5 (or above)\n".
+"4. The in-house script for adding internal node names (TREEMANUPULATION) \n".
+"5. The in-house script for generating statefiles for PastML (splitEachColumn) \n".
+"Both above in-house scripts should be under the SAME directory.\n\n";
+
+my $tree = $ARGV[0];
 chomp2 $tree;
 open(TREE, "$tree");
-print "Please type in the name of/full path to the sequence file(in single-lined fasta format): \n";
-my $fasta = <STDIN>;	##Defined fasta file input
+my $fasta = $ARGV[1];
 chomp2 $fasta;
 open(FASTA, "$fasta");
+my $outdir = $ARGV[2];
+chomp2 $outdir;
+my $threads = int($ARGV[3]);    ##number of threads new add on 20220122 by yyt
 
-print "Step1: READING IN FASTA FILE... \n\n";
-$i=0;
+##get alignment length";
+#$line = <FASTA>;
+#$line = <FASTA>;
+#chomp2 $line;
+#$length = length($line);
+$length=0;
 while($line = <FASTA>){
 	chomp2 $line;
-	$name = substr $line, 1;
-	$line = <FASTA>;
-	chomp2 $line;
-	$sequence{$name} = $line;
-	$names{$i} = $name;
-	$length = length($line);
-	$i=$i+1;
-}
-print "FINISH READING IN FASTA FILE!!! \n\n";
-
-print "Step2: NOW GENERATING TABLE FILE FOR PASTML... \n\n";
-$y=1;
-for($m =0; $m<$length;$m++){
-	my $filename = "position_".$y.".txt";	##Output file creation
-	open($new, '>', $filename) or die "Could not open '$filename' $!";
-	
-	### Generation of the input file for PASTML when ambiguous nucleotide is found ###
-	print $new "TAXA	NUCL\n";
-	for($k = 0; $k<$i;$k++){			
-		$nucl = substr $sequence{$names{$k}}, $m, 1;
-		$nucl = uc $nucl;
-		if($nucl eq "-"){
-			print $new $names{$k}."	X\n";
-		}
-		elsif($nucl eq "N"){
-			print $new $names{$k}."	A\n";
-			print $new $names{$k}."	T\n";
-			print $new $names{$k}."	C\n";
-			print $new $names{$k}."	G\n";
-		}
-		elsif($nucl eq "R"){
-			print $new $names{$k}."	A\n";
-			print $new $names{$k}."	G\n";
-		}
-		elsif($nucl eq "Y"){
-			print $new $names{$k}."	T\n";
-			print $new $names{$k}."	C\n";
-		}
-		elsif($nucl eq "K"){
-			print $new $names{$k}."	G\n";
-			print $new $names{$k}."	T\n";
-		}
-		elsif($nucl eq "M"){
-			print $new $names{$k}."	A\n";
-			print $new $names{$k}."	C\n";
-		}
-		elsif($nucl eq "S"){
-			print $new $names{$k}."	G\n";
-			print $new $names{$k}."	C\n";
-		}
-		elsif($nucl eq "W"){
-			print $new $names{$k}."	A\n";
-			print $new $names{$k}."	T\n";
-		}
-		elsif($nucl eq "B"){
-			print $new $names{$k}."	G\n";
-			print $new $names{$k}."	C\n";
-			print $new $names{$k}."	T\n"
-		}
-		elsif($nucl eq "D"){
-			print $new $names{$k}."	A\n";
-			print $new $names{$k}."	G\n";
-			print $new $names{$k}."	T\n"
-		}
-		elsif($nucl eq "H"){
-			print $new $names{$k}."	A\n";
-			print $new $names{$k}."	C\n";
-			print $new $names{$k}."	T\n"
-		}
-		elsif($nucl eq "V"){
-			print $new $names{$k}."	A\n";
-			print $new $names{$k}."	C\n";
-			print $new $names{$k}."	G\n"
-		}
-		else{
-			print $new $names{$k}."	".$nucl."\n";
-		}
+	if ($line =~ />/ && $length != 0) {
+		last;
 	}
-	print "position: ".$y."/".$length."\n";
-	$y=$y+1;
-	close $new;
+	if($line =~ />/)
+	{
+		$length=0;
+	}
+	else
+	{
+		$length=$length + length($line);
+	}
 }
+
+print "Step1: GENERATING TABLE FILE FOR PASTML... \n";
+
+my $start_time=gettimeofday;
+$cmd = "./splitEachColumn ".$fasta." ".$outdir." ".$threads;
+$cpd = `$cmd`;
+my $end_time=gettimeofday;
+my $used_time=$end_time-$start_time; 
+print "Processing used ".$used_time." seconds\n";
 print "FILE GENERATION FOR PASTML COMPLETED!!!\n\n";
 
-print "Step3: ADDITION OF INNODE NAME TO TREE FILE...\n\n";
-$cmd = "python2 TREEMANUPULATION_AddInnodeNameToTreeByArgument.py ".$tree;
+print "Step2: ADDITION OF INNODE NAME TO TREE FILE...\n";
+$start_time=gettimeofday;
+$cmd = "python3 TREEMANUPULATION_AddInnodeNameToTreeByArgument.py ".$tree;
 $cpd = `$cmd`;
+$end_time=gettimeofday;
+$used_time=$end_time-$start_time; 
+print "Processing used ".$used_time." seconds\n";
 print "Addition of Name Completed!!!\n\n";
 
-print "Step4: START RUNNING PASTML......\n\n";
-
-for($i=1;$i<$y;$i++){
-	$cmd = "pastml --tree ".$tree."_InnodeNameAdded --data position_".$i.".txt --columns NUCL --prediction_method ACCTRAN --work_dir position_".$i."_generated.txt";
-	$cpd = `$cmd`;
+print "Step3: START RUNNING PASTML......\n";
+$start_time=gettimeofday;
+my $interations = int($length/$threads);
+my $iter = 0;
+for($iter=0; $iter<$threads; $iter++){
+	my $beginIdx = $iter*$interations;
+	my $endIdx = ($iter+1)*$interations;
+	if($iter == $threads-1){
+		$endIdx = $length;
+	}
+	async {
+		for($i=$beginIdx;$i<$endIdx;$i++){
+			$cmd = "pastml --tree ".$tree."_InnodeNameAdded --data ".$outdir."/position_".$i.".txt --columns NUCL --prediction_method ACCTRAN --work_dir ".$outdir."/position_".$i."_generated.txt";
+			$cpd = `$cmd`;
+			##print "PastML for ".$i;
+		}
+	};
 }
+$_->join() for threads->list;
 
+$end_time=gettimeofday;
+$used_time=$end_time-$start_time; 
+print "Processing used ".$used_time." seconds\n";
 print "Finished Running PASTML!!!\n\n";
 
-print "Step5: START TO COMBINE PASTML RESULT...\n\n";
+print "Step4: START TO COMBINE PASTML RESULT...\n";
+$start_time=gettimeofday;
 
-for($h=1;$h<$y;$h++){
-	$cmd = 'sed -E "s/A\/T\/C\/G/N/g" position_'.$h.'_generated.txt/combined_ancestral_states.tab > position_'.$h.'_generated.txt/combined_ancestral_states.tab_renamed';
+for($h=0;$h<$length;$h++){
+	$cmd = 'sed -E "s/A\/T\/C\/G/N/g" '.$outdir.'/position_'.$h.'_generated.txt/combined_ancestral_states.tab > '.$outdir.'/position_'.$h.'_generated.txt/combined_ancestral_states.tab_renamed';
 	$cpd = `$cmd`;
-	print $h."\n";
-	my $ff4 = 'position_'.$h.'_generated.txt/combined_ancestral_states.tab_renamed';chomp $ff4;
+	#print $h."\n";
+	my $ff4 = $outdir.'/position_'.$h.'_generated.txt/combined_ancestral_states.tab_renamed';chomp $ff4;
 	open(FASTA, "$ff4");
 	my %record;			##Hash table for storage of NUCL cahracter, HashTable
 	$line = <FASTA>;
@@ -491,9 +471,12 @@ for($h=1;$h<$y;$h++){
 	close FASTA;
 }
 
+$end_time=gettimeofday;
+$used_time=$end_time-$start_time; 
+print "Processing used ".$used_time." seconds\n";
 print "Printing Out the Ancestral Sequence...\n\n";
 
-my $ancseq_file = 'ancestral_sequence.fasta';
+my $ancseq_file = $outdir.'/ancestral_sequence.fasta';
 open(my $anc, '>', $ancseq_file) or die "Could not open '$ancseq_file' $!";
 
 for $key (keys %seq){
@@ -503,12 +486,14 @@ for $key (keys %seq){
 	}
 }
 
-for($i=0;$i<$y;$i++){
-	$cmd = "rm -rf position_".$i.".txt";
+for($i=0;$i<$length;$i++){
+	$cmd = "rm -rf ".$outdir."/position_".$i.".txt";
 	$cpd = `$cmd`;
-	$cmd = "rm -rf position_".$i."_generated.txt";
+	$cmd = "rm -rf ".$outdir."/position_".$i."_generated.txt";
 	$cpd = `$cmd`;
 }
-
-print "!!! PLEASE USE THE FILE \"\*TREE.FILE\*_InnodeNameAdded\"  AND \"ancestral_sequence.fasta\" FOR TIPars Step. !!!\n\n";
 print "Finished All Process!!! Thank you for using!!!\n\n";
+
+
+
+
