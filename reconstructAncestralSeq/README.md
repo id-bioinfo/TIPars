@@ -51,7 +51,7 @@ All output files are in the input path of <outdir>.
 ## toy test
 
 ```bash
-perl reconstructAncestralSeq.pl 16S_tree.nwk 16S_taxa.fas outdir 8
+perl reconstructAncestralSeq.pl trial.tree trial.fasta outdir 8
 ```
 
 Messages printed out to screen should be as follow.
@@ -59,25 +59,33 @@ Messages printed out to screen should be as follow.
 PLESAE CONFIRMED THAT YOU HAVE INSTALLED:
 1. PastML (https://pastml.pasteur.fr/)
 2. ETE3 (http://etetoolkit.org/download/)
-3. Python3 and Perl5 (or above)
+3. Python3, Perl5 (or above) and OpenMP
 4. The in-house script for adding internal node names (TREEMANUPULATION)
 5. The in-house script for generating statefiles for PastML (splitEachColumn)
 Both above in-house scripts should be under the SAME directory.
 
 Step1: GENERATING TABLE FILE FOR PASTML...
+
 Processing used 0.648938894271851 seconds
+
 FILE GENERATION FOR PASTML COMPLETED!!!
 
 Step2: ADDITION OF INNODE NAME TO TREE FILE...
+
 Processing used 10.8755230903625 seconds
+
 Addition of Name Completed!!!
 
 Step3: START RUNNING PASTML......
+
 Processing used 81.2306489944458 seconds
+
 Finished Running PASTML!!!
 
 Step4: START TO COMBINE PASTML RESULT...
+
 Processing used 11.9872329235077 seconds
+
 Printing Out the Ancestral Sequence...
 
 Finished All Process!!! Thank you for using!!!
