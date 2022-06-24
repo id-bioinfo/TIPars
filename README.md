@@ -21,7 +21,9 @@ Yongtao Ye, Marcus Shum, Joseph Tsui, Guangchuang Yu, Tommy Lam
 Given the multiple sequence alignments of taxa and ancestral sequences for an existing reference phylogenetic tree, 
 TIPars computes the substitution scores of the query sequence against all branches in the tree using a specific substitution scoring table based on the IUPAC nucleotide ambiguity codes 
 and searches for the minimal branch as the best insertion position. Length of new branches will be recalculated based on 
-a local estimation model. An example of a single query sequence is illustrated in Figure 1. 
+a local estimation model. An example of single query insertion is illustrated in Figure 1. 
+Query Q(ACG**T**) differs from both two ends of branch G(ACC**G**)-D(ACG**C**) with one mutation at the fourth site,
+resulting in the minimal insertion branch.
 In case where multiple branches will result into the same minimal substitution score, 
 TIPars applies simple yet practical rules to filter them. For details of the algorithm, 
 please refer to our preprint of this work ([link](https://www.biorxiv.org/content/10.1101/2021.12.30.474610v1)).
@@ -46,18 +48,24 @@ make
 
 # Quick Usage
 
+Given a reference tree (-t) and alignments of taxa and ancestral sequences (-s and -a),
+TIPars would placement a set of **aligned** query samples (-q) to `jplace` placement file
+or insert them to `newick` tree file according to user setting model (-p).
+
+TIPars excpets nucleotides by default, please use `-aa` for protein sequences that uses Blosum62 scoring matrix instead.
+
 ```bash
-./tipars -t tree \
+./tipars -aa (optional) \
+     -t tree \
 	 -s aligned_taxa_sequence \
-         -a aligned_ancestral_sequence \
+     -a aligned_ancestral_sequence \
 	 -q aligned_query_sequence \
 	 -o output_file \
 	 -f sequence_fileFormat (optional) \
 	 -m multiplacement or not (optional) \
 	 -p insertion or placement (optional)\
 	 -d print to screen or not (optional) \
-	 -x java Xmx setting (optional) \
-	 
+	 -x java Xmx setting (optional) \ 	 
 ```
 
 ## toy test
@@ -77,6 +85,7 @@ Any problems about the usage of TIPars, please send email to tipars@d24h.hk.
 
 ## input 
 
++ `-aa`: only set it when analyzing protein sequences
 + `-t`: tree file, in Newick format
 + `-s`: fasta/vcf file contains aligned taxa sequences
 + `-a`: fasta/vcf file contains aligned ancestral sequences
@@ -94,7 +103,7 @@ Any problems about the usage of TIPars, please send email to tipars@d24h.hk.
     - mainly for updating tree
     - sequentially insertion
   + `placement` for query sequence(s) placement
-    - output `jplace` tree file that incorporates original tree with placement information
+    - output `jplace` placement file that incorporates original tree with placement information
     - mainly for query sequence(s) classification
     - independent placement
 
@@ -104,6 +113,13 @@ The benchmark datasets used for this study can be referred on the folder `Benchm
 including 16S, H3N2, NDV, SARS2-100k and SARS2-660k. Both the tree file and alignment files of taxa and ancestral sequences are available except SARS-CoV-2 datasets.
 Due to GISAID's data sharing policy, only Accession Numbers are provided for the sequences downloaded from GISAID.
 For the reference tree of SARS2-660k, please refer to the phylogeny (dated on 6 September 2021) under Audacity from GISAID.
+
+# How to reconstruct ancestral sequences
+
+We provided an perl script `reconstructAncestralSeq.pl` to reconstruct ancestral sequences using PastML[^3] parallelly. 
+Input with a rooted tree and corresponding multiple sequence alignment of taxa,
+the script ouputs the reconstructed ancestral sequences to fasta file and the tree with all internal node named as "INNODEXXX" to newick file. 
+More details can be check in ([link](https://github.com/id-bioinfo/TIPars/tree/master/reconstructAncestralSeq)).
 
 # How to Cite
 
