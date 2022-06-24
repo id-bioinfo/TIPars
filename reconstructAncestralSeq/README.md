@@ -1,6 +1,6 @@
 # Reconstrcut Ancestral Sequences using PastML
 
-ReconstrcutAncestralSeqByPastML.pl is a perl script to reconstrcut ancestral sequences using PastML
+reconstructAncestralSeq.pl is a perl script to reconstrcut ancestral sequences using PastML
 that includes two additional in-house scripts for adding names (INNODE1...INNODEN) for internal nodes of the tree 
 and generating the annotation files as input for PastML.
 
@@ -11,12 +11,12 @@ Yongtao Ye and Marcus Shum
 
 # Dependency
 
-To run ReconstrcutAncestralSeqByPastML.pl, please first install [PastML](https://github.com/evolbioinfo/pastml) [^1] and [ETE3](http://etetoolkit.org/new_download/) [^2]
+To run reconstructAncestralSeq.pl, please first install [PastML](https://github.com/evolbioinfo/pastml) [^1] and [ETE3](http://etetoolkit.org/new_download/) [^2]
 using Python3 as well as OpenMP for our in-house c++ script.
 
 # How It Works 
 
-ReconstrcutAncestralSeqByPastML.pl includes three steps.
+reconstructAncestralSeq.pl includes three steps.
 
 1) Generate an annotation table specifying tip states (nucleotide or amino acid) by extracting each column in the MSA of taxa, 
 using the in-house c++ program `splitEachColumn` that uses OpenMP for parallelization.
@@ -28,7 +28,7 @@ by the in-house python3 script `TREEMANUPULATION_AddInnodeNameToTreeByArgument.p
 
 # Quick Usage
 
-`perl ReconstrcutAncestralSeqByPastML.pl <tree.nwk> <taxaMSA.fas> <outdir> <numberthreads>`
+`perl reconstructAncestralSeq.pl <tree.nwk> <taxaMSA.fas> <outdir> <numberthreads>`
 
 ## input 
 1) tree.nwk: Newick format tree file
@@ -51,7 +51,7 @@ All output files are in the input path of <outdir>.
 ## toy test
 
 ```bash
-perl ReconstrcutAncestralSeqByPastML.pl 16S_tree.nwk 16S_taxa.fas outdir 8
+perl reconstructAncestralSeq.pl 16S_tree.nwk 16S_taxa.fas outdir 8
 ```
 
 Messages printed out to screen should be as follow.
