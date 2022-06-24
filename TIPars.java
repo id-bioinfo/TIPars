@@ -49,9 +49,12 @@ public class TIPars{
     private ArrayList<FlexibleNode> minGlobalMemoryBranchScoreNodeList = new ArrayList<FlexibleNode>();
     
     public static char[] alphabet_nt =  {'A', 'C', 'G', 'T', 'R', 'Y', 'M', 'K', 'S', 'W', 'H', 'B', 'V', 'D', 'N', '-'};  ///IUPAC nucleotide codes
+    public static char[] alphabet_aa =  {'A', 'R', 'N', 'D', 'C', 'Q', 'E', 'G', 'H', 'I', 'L', 'K', 'M', 'F', 'P', 'S', 'T', 'W', 'Y', 'V', 'B', 'Z', 'X', '-'};  ///IUPAC nucleotide codes
     public static HashMap<Byte, HashSet<Byte>> _nucleotide_nomenclature = null;
     private static double[][] _nucleotide_nomenclature_scoreTable = null;
     private static HashMap<BitSet, Byte> _nucleotide_nomenclature_map2char = null;
+    private static double[][] _aminoacid_scoreTable = null;
+    private static double[][] _used_scoreTable = null;
 
     private ReentrantLock lock = new ReentrantLock(); 
     
@@ -561,9 +564,9 @@ public class TIPars{
         	char c_i = nodeQseq.charAt(i); 
         	
             //get the substitution scores
-        	double score_ab = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)b_i];
-        	double score_ac = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)c_i];
-        	double score_bc = _nucleotide_nomenclature_scoreTable[(byte)b_i][(byte)c_i];
+        	double score_ab = _used_scoreTable[(byte)a_i][(byte)b_i];
+        	double score_ac = _used_scoreTable[(byte)a_i][(byte)c_i];
+        	double score_bc = _used_scoreTable[(byte)b_i][(byte)c_i];
         	
             if(a_i != b_i && a_i != c_i && b_i != c_i){   // ATC
                 score += (score_ac + score_bc) / 2;
@@ -600,9 +603,9 @@ public class TIPars{
         	char b_i = nodeBseq.charAt(i);  
         	char c_i = nodeQseq.charAt(i); 
         	
-        	double score_ab = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)b_i];
-        	double score_ac = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)c_i];
-        	double score_bc = _nucleotide_nomenclature_scoreTable[(byte)b_i][(byte)c_i];
+        	double score_ab = _used_scoreTable[(byte)a_i][(byte)b_i];
+        	double score_ac = _used_scoreTable[(byte)a_i][(byte)c_i];
+        	double score_bc = _used_scoreTable[(byte)b_i][(byte)c_i];
         	
             if(a_i != b_i && a_i != c_i && b_i != c_i){   // ATC
                 score += (score_ac + score_bc) / 2;
@@ -626,9 +629,9 @@ public class TIPars{
         	char b_i = bSeq.charAt(i);  
         	char c_i = cSeq.charAt(i); 
         	
-        	 double score_ac = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)c_i];
-             double score_bc = _nucleotide_nomenclature_scoreTable[(byte)b_i][(byte)c_i];
-             double score_ab = _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)b_i];
+        	 double score_ac = _used_scoreTable[(byte)a_i][(byte)c_i];
+             double score_bc = _used_scoreTable[(byte)b_i][(byte)c_i];
+             double score_ab = _used_scoreTable[(byte)a_i][(byte)b_i];
              
         	if(a_i == b_i && a_i == c_i){
                 continue;
@@ -690,10 +693,10 @@ public class TIPars{
         	byte c = nodeQseq.containsKey(key) ? nodeQseq.get(key) : ref_sequence[key]; 
         	
             if(a != b && a != c && b != c){   // ATC
-                score += (_nucleotide_nomenclature_scoreTable[a][c] + _nucleotide_nomenclature_scoreTable[b][c]) / 2;
+                score += (_used_scoreTable[a][c] + _used_scoreTable[b][c]) / 2;
             } 
             else if(a == b && b != c){   // AAT
-            	score += _nucleotide_nomenclature_scoreTable[b][c];
+            	score += _used_scoreTable[b][c];
             }
             
             if(score - minGlobalMemoryBranchScore > MinDoubleNumLimit) return score;
@@ -728,9 +731,9 @@ public class TIPars{
          	byte b = nodeBseq.containsKey(key) ? nodeBseq.get(key) : ref_sequence[key]; 
          	byte c = nodeQseq.containsKey(key) ? nodeQseq.get(key) : ref_sequence[key]; 
 
-         	double score_ab = _nucleotide_nomenclature_scoreTable[a][b];
-         	double score_ac = _nucleotide_nomenclature_scoreTable[a][c];
-         	double score_bc = _nucleotide_nomenclature_scoreTable[b][c];
+         	double score_ab = _used_scoreTable[a][b];
+         	double score_ac = _used_scoreTable[a][c];
+         	double score_bc = _used_scoreTable[b][c];
          	
             if(a != b && a != c && b != c){   // ATC
                 score += (score_ac + score_bc) / 2;
@@ -756,9 +759,9 @@ public class TIPars{
         	byte b = nodeBseq.containsKey(key) ? nodeBseq.get(key) : ref_sequence[key]; 
         	byte c = nodeQseq.containsKey(key) ? nodeQseq.get(key) : ref_sequence[key]; 
 
-        	double score_ab = _nucleotide_nomenclature_scoreTable[(byte)a][(byte)b];
-        	double score_ac = _nucleotide_nomenclature_scoreTable[(byte)a][(byte)c];
-        	double score_bc = _nucleotide_nomenclature_scoreTable[(byte)b][(byte)c];
+        	double score_ab = _used_scoreTable[(byte)a][(byte)b];
+        	double score_ac = _used_scoreTable[(byte)a][(byte)c];
+        	double score_bc = _used_scoreTable[(byte)b][(byte)c];
         	
         	byte placeCharacter = a; ///default place a
         	if(a == b && a == c)
@@ -798,7 +801,7 @@ public class TIPars{
         for(int i= 0; i < getAlignmentLength(); i++){
         	char a_i = nodeBseq.charAt(i);  
         	char b_i = nodeQseq.charAt(i);  
-        	scoreNode += _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)b_i];
+        	scoreNode += _used_scoreTable[(byte)a_i][(byte)b_i];
         }
 
         return scoreNode; 
@@ -810,7 +813,7 @@ public class TIPars{
         for(int i= 0; i < getAlignmentLength(); i++){
         	char a_i = nodeBseq.charAt(i);  
         	char b_i = nodeQseq.charAt(i);  
-        	score += _nucleotide_nomenclature_scoreTable[(byte)a_i][(byte)b_i];
+        	score += _used_scoreTable[(byte)a_i][(byte)b_i];
         }
         return score; 
     }
@@ -826,7 +829,7 @@ public class TIPars{
         	byte b = nodeBseq.containsKey(key) ? nodeBseq.get(key) : ref_sequence[key]; 
         	byte c = nodeQseq.containsKey(key) ? nodeQseq.get(key) : ref_sequence[key]; 
 
-        	score += _nucleotide_nomenclature_scoreTable[b][c];
+        	score += _used_scoreTable[b][c];
         }
         return score; 
     }
@@ -2102,8 +2105,68 @@ public class TIPars{
     	return nucleotide_nomenclature;   	 
     }
 
+    //generate blosum62 substitution table
+    public static double[][] generate_aminoacid_scoreTable()
+    {
+    	int size = 0;
+    	for(int i=0; i<alphabet_aa.length; ++i)
+    		if((byte)alphabet_aa[i] > size) size = (byte)alphabet_aa[i]; //change char to integer based on ascii code
+    	size = size + 1;
+    	double[][] NodeScoreBigTable = new double[size][size];
+    	for(int i=0; i<size; ++i) Arrays.fill(NodeScoreBigTable[0], 0);
+
+    	double[][] blosum62 = {
+    	    	//A  R  N  D  C  Q  E  G  H  I  L  K  M  F  P  S  T  W  Y  V  B  Z  X  -
+    			{4,-1,-2,-2,0,-1,-1,0,-2,-1,-1,-1,-1,-2,-1,1,0,-3,-2,0,-2,-1,0,-4},
+    			{-1,5,0,-2,-3,1,0,-2,0,-3,-2,2,-1,-3,-2,-1,-1,-3,-2,-3,-1,0,-1,-4},
+    			{-2,0,6,1,-3,0,0,0,1,-3,-3,0,-2,-3,-2,1,0,-4,-2,-3,3,0,-1,-4},
+    			{-2,-2,1,6,-3,0,2,-1,-1,-3,-4,-1,-3,-3,-1,0,-1,-4,-3,-3,4,1,-1,-4},
+    			{0,-3,-3,-3,9,-3,-4,-3,-3,-1,-1,-3,-1,-2,-3,-1,-1,-2,-2,-1,-3,-3,-2,-4},
+    			{-1,1,0,0,-3,5,2,-2,0,-3,-2,1,0,-3,-1,0,-1,-2,-1,-2,0,3,-1,-4},
+    			{-1,0,0,2,-4,2,5,-2,0,-3,-3,1,-2,-3,-1,0,-1,-3,-2,-2,1,4,-1,-4},
+    			{0,-2,0,-1,-3,-2,-2,6,-2,-4,-4,-2,-3,-3,-2,0,-2,-2,-3,-3,-1,-2,-1,-4},
+    			{-2,0,1,-1,-3,0,0,-2,8,-3,-3,-1,-2,-1,-2,-1,-2,-2,2,-3,0,0,-1,-4},
+    			{-1,-3,-3,-3,-1,-3,-3,-4,-3,4,2,-3,1,0,-3,-2,-1,-3,-1,3,-3,-3,-1,-4},
+    			{-1,-2,-3,-4,-1,-2,-3,-4,-3,2,4,-2,2,0,-3,-2,-1,-2,-1,1,-4,-3,-1,-4},
+    			{-1,2,0,-1,-3,1,1,-2,-1,-3,-2,5,-1,-3,-1,0,-1,-3,-2,-2,0,1,-1,-4},
+    			{-1,-1,-2,-3,-1,0,-2,-3,-2,1,2,-1,5,0,-2,-1,-1,-1,-1,1,-3,-1,-1,-4},
+    			{-2,-3,-3,-3,-2,-3,-3,-3,-1,0,0,-3,0,6,-4,-2,-2,1,3,-1,-3,-3,-1,-4},
+    			{-1,-2,-2,-1,-3,-1,-1,-2,-2,-3,-3,-1,-2,-4,7,-1,-1,-4,-3,-2,-2,-1,-2,-4},
+    			{1,-1,1,0,-1,0,0,0,-1,-2,-2,0,-1,-2,-1,4,1,-3,-2,-2,0,0,0,-4},
+    			{0,-1,0,-1,-1,-1,-1,-2,-2,-1,-1,-1,-1,-2,-1,1,5,-2,-2,0,-1,-1,0,-4},
+    			{-3,-3,-4,-4,-2,-2,-3,-2,-2,-3,-2,-3,-1,1,-4,-3,-2,11,2,-3,-4,-3,-2,-4},
+    			{-2,-2,-2,-3,-2,-1,-2,-3,2,-1,-1,-2,-1,3,-3,-2,-2,2,7,-1,-3,-2,-1,-4},
+    			{0,-3,-3,-3,-1,-2,-2,-3,-3,3,1,-2,1,-1,-2,-2,0,-3,-1,4,-3,-2,-1,-4},
+    			{-2,-1,3,4,-3,0,1,-1,0,-3,-4,0,-3,-3,-2,0,-1,-4,-3,-3,4,1,-1,-4},
+    			{-1,0,0,1,-3,3,4,-2,0,-3,-3,1,-1,-3,-1,0,-1,-3,-2,-2,1,4,-1,-4},
+    			{0,-1,-1,-1,-2,-1,-1,-1,-1,-1,-1,-1,-1,-1,-2,0,0,-2,-1,-1,-1,-1,-1,-4},
+    			{-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,-4,1},   			
+    	};
+    	
+    	for(int i=0; i<alphabet_aa.length; ++i)
+    	{
+    		for(int j=0; j<alphabet_aa.length; ++j)
+    		{
+	    		NodeScoreBigTable[alphabet_aa[i]][alphabet_aa[j]] = blosum62[i][j];
+    		}
+    	}
+    	 
+//    	 for(int i=0; i<alphabet_aa.length; ++i)
+//    	 {
+//    		 for(int j=0; j<alphabet_aa.length; ++j)
+//    		 {
+//    			 System.out.print(NodeScoreBigTable[alphabet_aa[i]][alphabet_aa[j]] + "\t");
+//    		 }
+//    		 System.out.print("\n");
+//    	 }
+ 
+    	return NodeScoreBigTable;
+    }
+    
     public static void main(String[] args) { 
      	
+    	
+    	
         String insfn = "";
         String intfn = "";
         String inafn = "";
@@ -2111,6 +2174,7 @@ public class TIPars{
         String informat   = "fasta";
         String outfn = "";
         String otype = "insertion";
+        Boolean aa_flag = false;
 
         String nidname = "label";
         String attname = "GenName";
@@ -2119,6 +2183,8 @@ public class TIPars{
         _nucleotide_nomenclature = generate_nucleotide_nomenclature();
         _nucleotide_nomenclature_scoreTable = generate_nucleotide_nomenclature_scoreTable(); //IUPAC nucleotide codes substitution table
         _nucleotide_nomenclature_map2char = generate_nucleotide_nomenclature_characterTable();
+        
+        _aminoacid_scoreTable = generate_aminoacid_scoreTable(); //Amino acid substitution table using blosum62 matrix
 
         try{
         	intfn = args[0];
@@ -2130,13 +2196,24 @@ public class TIPars{
             outfn = args[6];
             otype = args[7];  
             printDisInfoOnScreen = Boolean.parseBoolean(args[8]);
+            aa_flag = Boolean.parseBoolean(args[9]);
             //"insertion_vcf","insertion_vcf","insertion","placement"
          	Runtime run = Runtime.getRuntime();
             long startTime = System.currentTimeMillis();
             String output_folder = getFolder(outfn);
-
+            
+            System.out.println("TIPars Version 1.1.0: Robust expansion of phylogeny for fast-growing genome sequence data");
+            System.out.println("TreeFile: " + intfn);
+            System.out.println("TaxaFile: " + insfn);
+            System.out.println("AncestralSequenceFile: " + inafn);
+            System.out.println("QueryFile: " + inqfn);
+            System.out.println("Model: " + otype);
+            
+            //initialize scoring matrix
+            _used_scoreTable = _nucleotide_nomenclature_scoreTable;
+            if(aa_flag) _used_scoreTable = _aminoacid_scoreTable;
+            
             HashMap<Integer, String> queryList = null;
-
             ///////read vcf file
       	    if(informat.contains("vcf") || informat.contains("Vcf") || informat.contains("VCF"))
       	    {
