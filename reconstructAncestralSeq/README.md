@@ -35,18 +35,18 @@ by the in-house python3 script `TREEMANUPULATION_AddInnodeNameToTreeByArgument.p
   
 2) taxaMSA.fas: fasta file contains aligned taxa sequences
   
-3) outdir: output directory
+3) outdir: output directory for reconstructed ancestral sequences and working space for PastML
   
 4) numberthreads: an integer for number of threads to use
 
 ## output 
 All output files are in the input path of <outdir>.
   
-1) ancestral_sequence.fasta: ancestral sequences constructed by PastML
+1) ancestral_sequence.fasta: ancestral sequences constructed by PastML in <outdir>
   
-2) <tree.nwk>\_InnodeNameAdded: the tree file with added internal node names
+2) <tree.nwk>\_InnodeNameAdded: the tree file with added internal node names in the same directory of <tree.nwk>
   
-3) <tree.nwk>\_ancestor: a tsv file indicating two ends of each branch and its branch length
+3) <tree.nwk>\_ancestor: a tsv file indicating two ends of each branch and its branch length in the same directory of <tree.nwk>
 
 ## toy test
 
