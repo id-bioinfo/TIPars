@@ -80,7 +80,10 @@ while($line = <FASTA>){
 print "Step1: GENERATING TABLE FILE FOR PASTML... \n";
 
 my $start_time=gettimeofday;
-$cmd = "source splitEachColumn ".$fasta." ".$outdir." ".$threads;
+$cmd = "chmod a+x splitEachColumn";
+$cpd = `$cmd`;
+
+$cmd = "./splitEachColumn ".$fasta." ".$outdir." ".$threads;
 $cpd = `$cmd`;
 my $end_time=gettimeofday;
 my $used_time=$end_time-$start_time; 
