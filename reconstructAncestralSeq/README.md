@@ -7,7 +7,7 @@ and generating the annotation files as input for PastML.
 
 # Authors
 
-Yongtao Ye and Marcus Shum
+Marcus Shum and Yongtao Ye
 
 # Dependency
 
