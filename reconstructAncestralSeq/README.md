@@ -66,25 +66,25 @@ Both above in-house scripts should be under the SAME directory.
 
 Step1: GENERATING TABLE FILE FOR PASTML...
 
-Processing used 0.648938894271851 seconds
+Processing used 0.00259685516357422 seconds
 
-FILE GENERATION FOR PASTML COMPLETED!!!
+File Generation for PastML Completed!!!
 
 Step2: ADDITION OF INNODE NAME TO TREE FILE...
 
-Processing used 10.8755230903625 seconds
+Processing used 0.487257957458496 seconds
 
 Addition of Name Completed!!!
 
 Step3: START RUNNING PASTML......
 
-Processing used 81.2306489944458 seconds
+Processing used 2.05268001556396 seconds
 
 Finished Running PASTML!!!
 
 Step4: START TO COMBINE PASTML RESULT...
 
-Processing used 11.9872329235077 seconds
+Processing used 0.0245828628540039 seconds
 
 Printing Out the Ancestral Sequence...
 
