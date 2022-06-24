@@ -51,7 +51,7 @@ All output files are in the input path of <outdir>.
 ## toy test
 
 ```bash
-perl reconstructAncestralSeq.pl trial.tree trial.fasta outdir 8
+perl reconstructAncestralSeq.pl trial.tree trial.fasta outdir 4
 ```
 
 Messages printed out to screen should be as follow.
