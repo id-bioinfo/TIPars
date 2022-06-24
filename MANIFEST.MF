@@ -1,4 +1,4 @@
-Manifest-Version: 1.0
-Created-By: Guangchuang YU
+Manifest-Version: 1.1.0
+Developed-By: Yongtao Ye, Marcus Shum, Joseph Tsui, Guangchuang Yu, Tommy Lam
 Class-Path: beast.jar
 Main-Class: TIPars
