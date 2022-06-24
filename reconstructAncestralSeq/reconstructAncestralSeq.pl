@@ -37,7 +37,7 @@ my $nucl;			##Variable to hold nucleotide character in creating the file for PAS
 ###########################
 my $numArgs = $#ARGV + 1;
 if ($numArgs != 4) {
-    print "\nUsage: ReconstrcutAncestralSeqByPastML.pl tree.nwk taxaMSA.fas outdir numberthreads\n";
+    print "\nUsage: reconstructAncestralSeq.pl tree.nwk taxaMSA.fas outdir numberthreads\n";
     exit;
 }
 
@@ -80,12 +80,12 @@ while($line = <FASTA>){
 print "Step1: GENERATING TABLE FILE FOR PASTML... \n";
 
 my $start_time=gettimeofday;
-$cmd = "./splitEachColumn ".$fasta." ".$outdir." ".$threads;
+$cmd = "source splitEachColumn ".$fasta." ".$outdir." ".$threads;
 $cpd = `$cmd`;
 my $end_time=gettimeofday;
 my $used_time=$end_time-$start_time; 
 print "Processing used ".$used_time." seconds\n";
-print "FILE GENERATION FOR PASTML COMPLETED!!!\n\n";
+print "File Generation for PastML Completed!!!\n\n";
 
 print "Step2: ADDITION OF INNODE NAME TO TREE FILE...\n";
 $start_time=gettimeofday;
