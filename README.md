@@ -56,9 +56,9 @@ TIPars excpets nucleotides by default, please use `-aa` for protein sequences th
 
 ```bash
 ./tipars -aa (optional) \
-     -t tree \
+         -t tree \
 	 -s aligned_taxa_sequence \
-     -a aligned_ancestral_sequence \
+         -a aligned_ancestral_sequence \
 	 -q aligned_query_sequence \
 	 -o output_file \
 	 -f sequence_fileFormat (optional) \
