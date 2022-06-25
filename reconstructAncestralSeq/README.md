@@ -16,7 +16,7 @@ using Python3 as well as OpenMP for our in-house c++ script.
 
 # How It Works 
 
-reconstructAncestralSeq.pl includes three steps.
+reconstructAncestralSeq.pl includes four steps.
 
 1) Generate an annotation table specifying tip states (nucleotide or amino acid) by extracting each column in the MSA of taxa, 
 using the in-house c++ program `splitEachColumn` that uses OpenMP for parallelization. 
