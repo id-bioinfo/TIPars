@@ -19,12 +19,16 @@ using Python3 as well as OpenMP for our in-house c++ script.
 reconstructAncestralSeq.pl includes three steps.
 
 1) Generate an annotation table specifying tip states (nucleotide or amino acid) by extracting each column in the MSA of taxa, 
-using the in-house c++ program `splitEachColumn` that uses OpenMP for parallelization.
+using the in-house c++ program `splitEachColumn` that uses OpenMP for parallelization. 
+For example, if the alignment length of taxa is N, then there will be N annotation tables.
+
 
 2) Add names as INNODE1 to INNODEN (N is the number of internal nodes) for the input tree (should be rooted)
 by the in-house python3 script `TREEMANUPULATION_AddInnodeNameToTreeByArgument.py` using ETE3.
 
-3) Reconstrcut the ancestral sequences using PastML parallelly.
+3) Reconstrcut the ancestral states for each annotated table (each column of alignment) using PastML parallelly.
+
+4) Combine ancestral states for each column to final ancestral sequences as output.
 
 # Quick Usage
 
