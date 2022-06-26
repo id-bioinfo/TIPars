@@ -1,4 +1,4 @@
-/////g++ test.o -o test -fopenmp -lpthread
+/////g++ splitEachColumn.cpp -o splitEachColumn -fopenmp -lpthread
 #include <iostream>
 #include <fstream>
 #include <unordered_set>
