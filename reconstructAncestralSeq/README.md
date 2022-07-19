@@ -44,13 +44,13 @@ by the in-house python3 script `TREEMANUPULATION_AddInnodeNameToTreeByArgument.p
 4) numberthreads: an integer for number of threads to use
 
 ## output 
-All output files are in the input path of <outdir>.
+All output files are in the input path of `<outdir>`
   
-1) ancestral_sequence.fasta: ancestral sequences constructed by PastML in <outdir>
+1) ancestral_sequence.fasta: ancestral sequences constructed by PastML in `<outdir>`
   
-2) <tree.nwk>\_InnodeNameAdded: the tree file with added internal node names in the same directory of <tree.nwk>
+2) <tree.nwk>\_InnodeNameAdded: the tree file with added internal node names in the same directory of `<tree.nwk>`
   
-3) <tree.nwk>\_ancestor: a tsv file indicating two ends of each branch and its branch length in the same directory of <tree.nwk>
+3) <tree.nwk>\_ancestor: a tsv file indicating two ends of each branch and its branch length in the same directory of `<tree.nwk>`
 
 ## toy test
 
@@ -66,6 +66,7 @@ PLESAE CONFIRMED THAT YOU HAVE INSTALLED:
 3. Python3, Perl5 (or above) and OpenMP
 4. The in-house script for adding internal node names (TREEMANUPULATION)
 5. The in-house script for generating statefiles for PastML (splitEachColumn)
+
 Both above in-house scripts should be under the SAME directory.
 
 Step1: GENERATING TABLE FILE FOR PASTML...
