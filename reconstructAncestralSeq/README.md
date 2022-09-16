@@ -30,6 +30,8 @@ by the in-house python3 script `TREEMANUPULATION_AddInnodeNameToTreeByArgument.p
 
 4) Combine ancestral states for each column to final ancestral sequences as output.
 
+Both above in-house scripts (`splitEachColumn` and `TREEMANUPULATION_AddInnodeNameToTreeByArgument.py`) should be under the SAME directory when running reconstructAncestralSeq.pl.
+
 # Quick Usage
 
 `perl reconstructAncestralSeq.pl <tree.nwk> <taxaMSA.fas> <outdir> <numberthreads>`
