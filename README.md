@@ -77,8 +77,15 @@ If you just want to have a try on TIPars, regardness of SARS2, we recommend you 
 
 Any problems about the usage of TIPars, please send email to tipars@d24h.hk.
 
+To run on `test/sars2_1k`, please make sure you have downloaded the sequences from GISAID corresponding to the provided Accession Numbers!
 ```bash
 ./tipars -t test/sars2_1k/ref.tree -s test/sars2_1k/taxa.fasta -a test/sars2_1k/ancseq.fasta -q test/sars2_1k/query.fasta -o test/sars2_1k/tipars.tree
+```
+
+To run on `Benchmark datasets/NDV`
+```bash
+cd 'Benchmark datasets'/NDV
+../../tipars -t NDV_tree.nwk -s NDV_taxa.fas -a NDV_anc.fas -q NDV_query.fas -o tipars.tree
 ```
 
 # Option Details
