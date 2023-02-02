@@ -128,6 +128,13 @@ Input with a rooted tree and corresponding multiple sequence alignment of taxa,
 the script ouputs the reconstructed ancestral sequences to fasta file and the tree with all internal node named as "INNODEXXX" to newick file. 
 More details can be check in ([link](https://github.com/id-bioinfo/TIPars/tree/master/reconstructAncestralSeq)).
 
+# Docker setup
+We provided a Dockerfile for building Docker image, based on Ubuntu 22.04. The Dockerfile installed all nessesary software and libraries needed to run TIPars and reconstruct ancestral sequences. Here is how to use it:
+1. Make sure you have Docker installed and running
+2. Change directorsy to the root of this repository
+3. Run `docker build -t tipars .` to build the docker image
+4. To create a container and open a bash inside that container, run `docker run -it tipars bash` (to linked the host repo folder to the container repo folder, use this command instead: `docker run -it -v [host path to repo]:/tipars tipars bash`, please refer to [this docker tutorial](https://docs.docker.com/storage/bind-mounts/) for more), or you can run a tipars toy test using the NDV dataset by using this command: `docker run tipars`, or reconstruct acnestral sequence to test by `docker run --entrypoint '/bin/bash' tipars -c 'cd /tipars/reconstructAncestralSeq && perl reconstructAncestralSeq.pl trial.tree trail.fasta outdir 4'`
+
 # How to Cite
 
 Yongtao Ye, Marcus Shum, Joseph Tsui, Guangchuang Yu, David Smith, Huachen Zhu, Joseph Wu, Yi Guan, Tommy Tsan-Yuk Lam. Robust expansion of phylogeny for fast-growing genome sequence data.
