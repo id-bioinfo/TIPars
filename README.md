@@ -131,10 +131,11 @@ More details can be check in ([link](https://github.com/id-bioinfo/TIPars/tree/m
 # Docker setup
 We provided a Dockerfile for building Docker image, based on Ubuntu 22.04. The Dockerfile installed all nessesary software and libraries needed to run TIPars and reconstruct ancestral sequences. Here is how to use it:
 1. Make sure you have Docker installed and running
-2. Change directorsy to the root of this repository
+2. Change directory to the root of this repository
 3. Run `docker build -t tipars .` to build the docker image
-4. To create a container and open a bash inside that container, run `docker run -it tipars bash` (to linked the host repo folder to the container repo folder, use this command instead: `docker run -it -v [host path to repo]:/tipars tipars bash`, please refer to [this docker tutorial](https://docs.docker.com/storage/bind-mounts/) for more), or you can run a tipars toy test using the NDV dataset by using this command: `docker run tipars`, or reconstruct acnestral sequence to test by `docker run --entrypoint '/bin/bash' tipars -c 'cd /tipars/reconstructAncestralSeq && perl reconstructAncestralSeq.pl trial.tree trail.fasta outdir 4'`
-
+4. In any directory of your host computer, run `docker run -it --entrypoint '/bin/bash/' -v <directory of your host computer containing the input files>:/home tipars -c '<your command>'.
+	a. For example, the input files in in the current directory of your host computer, running tipars via: `docker run -it --entrypoint '/bin/bash/' -v ./:/home tipars -c '/tipars/tipars -t NDV_tree.nwk -s NDV_taxa.fas -a NDV_anc.fas -q NDV_query.fas -o tipars.tree'`
+	b. For running reconstructAncestralSeq, run `docker run -it --entrypoint '/bin/bash/' -v ./:/home tipars -c 'perl /tipars/reconstructAncestralSeq/reconstructAncestralSeq.pl trial.tree trial.fasta ./outdir 4'`
 # How to Cite
 
 Yongtao Ye, Marcus Shum, Joseph Tsui, Guangchuang Yu, David Smith, Huachen Zhu, Joseph Wu, Yi Guan, Tommy Tsan-Yuk Lam. Robust expansion of phylogeny for fast-growing genome sequence data.

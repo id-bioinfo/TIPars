@@ -40,5 +40,7 @@ RUN python3.11 -m pip install pastml
 RUN apt install gcc -y
 RUN apt-get install libomp-dev -y
 
+WORKDIR /home
+
 # Run Tipars toy test
 CMD /tipars/tipars -t /tipars/Benchmark_datasets/NDV/NDV_tree.nwk -s /tipars/Benchmark_datasets/NDV/NDV_taxa.fas -a /tipars/Benchmark_datasets/NDV/NDV_anc.fas -q /tipars/Benchmark_datasets/NDV/NDV_query.fas -o /tipars/Benchmark_datasets/NDV/tipars.tree
