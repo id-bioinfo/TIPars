@@ -73,7 +73,7 @@ TIPars excpets nucleotides by default, please use `-aa` for protein sequences th
 A small SARS-CoV-2 dataset with 1340 sequences is provided for a toy test. 
 Due to GISAID's data sharing policy [^6], only Accession Numbers are provided for the sequences downloaded from GISAID (https://www.gisaid.org/).
 
-If you just want to have a try on TIPars, regardness of SARS2, we recommend you to test on our NDV completed benchmark dataset at the folder `Benchmark datasets/NDV` ([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark%20datasets/NDV)). 
+If you just want to have a try on TIPars, regardness of SARS2, we recommend you to test on our NDV completed benchmark dataset at the folder `Benchmark_datasets/NDV` ([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark_datasets/NDV)). 
 
 Any problems about the usage of TIPars, please send email to tipars@d24h.hk.
 
@@ -82,9 +82,9 @@ To run on `test/sars2_1k`, please make sure you have downloaded the sequences fr
 ./tipars -t test/sars2_1k/ref.tree -s test/sars2_1k/taxa.fasta -a test/sars2_1k/ancseq.fasta -q test/sars2_1k/query.fasta -o test/sars2_1k/tipars.tree
 ```
 
-To run on `Benchmark datasets/NDV`
+To run on `Benchmark_datasets/NDV`
 ```bash
-cd 'Benchmark datasets'/NDV
+cd 'Benchmark_datasets'/NDV
 ../../tipars -t NDV_tree.nwk -s NDV_taxa.fas -a NDV_anc.fas -q NDV_query.fas -o tipars.tree
 ```
 
@@ -116,7 +116,7 @@ cd 'Benchmark datasets'/NDV
 
 # Benchmark datasets
 
-The benchmark datasets used for this study can be referred on the folder `Benchmark datasets`([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark%20datasets)),
+The benchmark datasets used for this study can be referred on the folder `Benchmark_datasets`([link](https://github.com/id-bioinfo/TIPars/tree/master/Benchmark_datasets)),
 including 16S, H3N2, NDV, SARS2-100k and SARS2-660k. Both the tree file and alignment files of taxa and ancestral sequences are available except SARS-CoV-2 datasets.
 Due to GISAID's data sharing policy, only Accession Numbers are provided for the sequences downloaded from GISAID.
 For the reference tree of SARS2-660k, please refer to the phylogeny (dated on 6 September 2021) under Audacity from GISAID.
@@ -131,13 +131,33 @@ More details can be check in ([link](https://github.com/id-bioinfo/TIPars/tree/m
 # Docker setup
 We provided a Dockerfile for building Docker image, based on Ubuntu 22.04. The Dockerfile installed all nessesary software and libraries needed to run TIPars and reconstruct ancestral sequences. Here is how to use it:
 1. Make sure you have Docker installed and running
-2. Change directory to the root of this repository
-3. Run `docker build -t tipars . --no-cache` to build the docker image
-4. Put all your input files in to a same directory
-4. In any directory of your host computer, run `docker run -it -v <absolute path of directory containing all input files>:/home --entrypoint '/bin/bash' tipars -c '<your command>'.
-	a. For running Tipars, run `docker run -it -v <path to input directory>:/home --entrypoint '/bin/bash' tipars -c '/tipars/tipars -t <tree file name> -s <taxa file name> -a <anc file name> -q <query file name> -o <output file name>'`
-  b. For running reconstructAncestralSeq, create a folder named 'outdir' in the input directory, then run `docker run -it -v <absolute path to input directory>:/home --entrypoint '/bin/bash' tipars -c 'cd /tipars/reconstructAcnestralSeq/ && perl reconstructAncestralSeq.pl /home/<tree file name> /home/<taxa file name> /home/outdir <number of parallel processes>'`
-5. The output will be inside the input directory
+2. Download this Github files and change directory to the root of this repository
+```bash
+git clone https://github.com/id-bioinfo/TIPars.git
+cd TIPars
+```
+3. Build up the docker image which takes some times
+```bash
+sudo docker build -t tipars . --no-cache
+```
+4. Put all your input files required to run TIPars or reconstructAncestralSeq to a customed directory ${PATH} (in your host computer)
+5. To run TIPars or reconstructAncestralSeq in any directory of your host computer
+```bash
+docker run -it -v ${PATH}:/home --entrypoint '/bin/bash' tipars -c '<your command>'
+```
+${PATH} is the absolute path of directory containing all input files in step 4.
++ `a`: For running Tipars, 
+```bash
+sudo docker run -it -v ${PATH}:/home --entrypoint '/bin/bash' tipars -c '/tipars/tipars -t <tree file name> -s <taxa file name> -a <anc file name> -q <query file name> -o <output file name>'
+```
++ `b`:  For running reconstructAncestralSeq,
+
+create a folder ${outdir} in the customed directory to store the ancestral sequecnes, and then run reconstructAncestralSeq,
+```bash
+cd ${PATH} and mkdir ${outdir}
+sudo docker run -it -v ${PATH}:/home --entrypoint '/bin/bash' tipars -c 'cd /tipars/reconstructAcnestralSeq/ && perl reconstructAncestralSeq.pl /home/<tree file name> /home/<taxa file name> /home/${outdir} <number of parallel processes>'
+``` 
+6. The output will be in the directory ${PATH}
 
 # How to Cite
 
