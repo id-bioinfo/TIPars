@@ -136,7 +136,7 @@ We provided a Dockerfile for building Docker image, based on Ubuntu 22.04. The D
 4. Put all your input files in to a same directory
 4. In any directory of your host computer, run `docker run -it -v <absolute path of directory containing all input files>:/home --entrypoint '/bin/bash' tipars -c '<your command>'.
 	a. For running Tipars, run `docker run -it -v <path to input directory>:/home --entrypoint '/bin/bash' tipars -c '/tipars/tipars -t <tree file name> -s <taxa file name> -a <anc file name> -q <query file name> -o <output file name>'`
-  b. For running reconstructAncestralSeq, create a folder named 'outdir' in the input directory, then run `docker run -it -v <absolute path to input directory>:/home --entrypoint '/bin/bash' tipars -c 'perl /tipars/reconstructAncestralSeq/reconstructAncestralSeq.pl <tree file name> <taxa file name> ./outdir <number of parallel processes>'`
+  b. For running reconstructAncestralSeq, create a folder named 'outdir' in the input directory, then run `docker run -it -v <absolute path to input directory>:/home --entrypoint '/bin/bash' tipars -c 'cd /tipars/reconstructAcnestralSeq/ && perl reconstructAncestralSeq.pl /home/<tree file name> /home/<taxa file name> /home/outdir <number of parallel processes>'`
 5. The output will be inside the input directory
 
 # How to Cite
