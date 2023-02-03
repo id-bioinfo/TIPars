@@ -129,40 +129,43 @@ the script ouputs the reconstructed ancestral sequences to fasta file and the tr
 More details can be check in ([link](https://github.com/id-bioinfo/TIPars/tree/master/reconstructAncestralSeq)).
 
 # Docker setup
-We provided a Dockerfile for building Docker image, based on Ubuntu 22.04. The Dockerfile installed all nessesary software and libraries needed to run TIPars and reconstruct ancestral sequences. Here is how to use it:
-1. Make sure you have Docker installed and running
-2. Download this Github files and change directory to the root of this repository
+We provided a Dockerfile for building Docker image, based on Ubuntu 22.04. The Dockerfile installed all nessesary software and libraries needed to run TIPars and ancestral sequence reconstruction using PastML. Here is how to use it:
+1. Make sure you have Docker installed and running.
+2. Download this Github files and change directory to the root of this repository.
 ```bash
 git clone https://github.com/id-bioinfo/TIPars.git
 cd TIPars
 ```
-3. Build up the docker image which takes some times
+3. Build up the docker image which may takes some times.
 ```bash
 sudo docker build -t tipars . --no-cache
 ```
-4. Put all your input files required to run TIPars or reconstructAncestralSeq to a customed directory ${MY_PATH} (in your host computer)
-5. To run TIPars or reconstructAncestralSeq in any directory of your host computer
+4. Set a shared directory in your host computer (shared with the docker container) and put all input files required to run TIPars or reconstructAncestralSeq to it. 
+
+5. To run TIPars or reconstructAncestralSeq in any directory of your host computer.
 ```bash
 docker run -it -v ${MY_PATH}:/home --entrypoint '/bin/bash' tipars -c '<your command>'
 ```
-${MY_PATH} is the absolute path of directory containing all input files in step 4.
-+ For running Tipars, 
-`sudo docker run -it -v ${PATH}:/home --entrypoint '/bin/bash' tipars -c '/tipars/tipars -t <tree file name> -s <taxa file name> -a <anc file name> -q <query file name> -o <output file name>'`
+${MY_PATH} is the absolute path of shared directory created in step 4.
++ Tipars
+
+`sudo docker run -it -v ${MY_PATH}:/home --entrypoint '/bin/bash' tipars -c '/tipars/tipars -t /home/<tree file name> -s /home/<taxa file name> -a /home/<anc file name> -q /home/<query file name> -o /home/<output file name>'`
 
 Example:
 ```bash
 MY_PATH=/home/ytye/TIPars/Benchmark_datasets/NDV
+cd $MY_PATH
 sudo docker run -it -v $MY_PATH:/home --entrypoint '/bin/bash' tipars -c '/tipars/tipars -t /home/NDV_tree.nwk -s /home/NDV_taxa.fas -a /home/NDV_anc.fas -q /home/NDV_query.fas -o /home/tipars.tree'
 ```
-+ For running reconstructAncestralSeq,
++ reconstructAncestralSeq
 
-create a folder ${outdir} in the customed directory ${MY_PATH} to store the ancestral sequecnes, and then run reconstructAncestralSeq, `sudo docker run -it -v ${PATH}:/home --entrypoint '/bin/bash' tipars -c 'cd /tipars/reconstructAcnestralSeq/ && perl reconstructAncestralSeq.pl /home/<tree file name> /home/<taxa file name> /home/${outdir} <number of parallel processes>'`
+create a folder ${outdir} at the shared directory to store the ancestral sequecnes, and then run reconstructAncestralSeq `sudo docker run -it -v ${MY_PATH}:/home --entrypoint '/bin/bash' tipars -c 'cd /tipars/reconstructAncestralSeq && perl reconstructAncestralSeq.pl /home/<tree file name> /home/<taxa file name> /home/${outdir} <number of parallel processes>'`
 
 Example:
 ```bash
 MY_PATH=/home/ytye/TIPars/reconstructAncestralSeq/
 cd $MY_PATH && mkdir outdir
-sudo docker run -it -v $MY_PATH:/home --entrypoint '/bin/bash' tipars -c 'cd /tipars/reconstructAcnestralSeq/ && perl reconstructAncestralSeq.pl /home/<tree file name> /home/<taxa file name> /home/${outdir} <number of parallel processes>'
+sudo docker run -it -v $MY_PATH:/home --entrypoint '/bin/bash' tipars -c 'cd /tipars/reconstructAncestralSeq && perl reconstructAncestralSeq.pl /home/trial.tree /home/trial.fasta /home/outdir 4'
 ``` 
 6. The output will be in the directory ${PATH}
 
