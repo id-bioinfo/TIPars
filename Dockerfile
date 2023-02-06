@@ -1,5 +1,10 @@
 FROM ubuntu:jammy-20221130
 
+# GHCR related label
+LABEL org.opencontainers.image.source=https://github.com/id-bioinfo/TIPars
+LABEL org.opencontainers.image.description="TIPars - Taxa Insertion by Parsimony on Ubuntu Jammy"
+LABEL org.opencontainers.image.licenses=LGPL-2.1
+
 # Copy all files to /tipars/
 COPY ./ /tipars/
 
