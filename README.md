@@ -142,11 +142,8 @@ sudo docker build -t tipars . --no-cache
 ```
 4. Set a shared directory in your host computer (shared with the docker container) and put all input files required to run TIPars or reconstructAncestralSeq to it. 
 
-5. To run TIPars or reconstructAncestralSeq in any directory of your host computer (the -w flag part is only needed for reconstructAncestralSeq).
-```bash
-sudo docker run --rm -v ${MY_PATH}:/home (-w /tipars/reconstructAncestralSeq) tipars <your command>
-```
-${MY_PATH} is the absolute path of shared directory created in step 4.
+5. To run TIPars or reconstructAncestralSeq in any directory of your host computer.
+
 + Tipars
 
 `sudo docker run --rm -v ${MY_PATH}:/home tipars /tipars/tipars -t /home/<tree file name> -s /home/<taxa file name> -a /home/<anc file name> -q /home/<query file name> -o /home/<output file name>`
@@ -167,7 +164,10 @@ MY_PATH=/home/ytye/TIPars/reconstructAncestralSeq/
 cd $MY_PATH && mkdir outdir
 sudo docker run --rm -v $MY_PATH:/home -w /tipars/reconstructAncestralSeq tipars perl reconstructAncestralSeq.pl /home/trial.tree /home/trial.fasta /home/outdir 4
 ``` 
-6. The output will be in the directory ${MY_PATH} or ${MY_PATH}/${outdir} (for running acnestral sequence reconstruction)
+
+${MY_PATH} is the absolute path of shared directory created in step 4.
+
+6. The output will be in the shared directory ${MY_PATH}.
 
 # How to Cite
 
