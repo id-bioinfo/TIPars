@@ -42,6 +42,5 @@ RUN apt-get install libomp-dev -y
 
 WORKDIR /home
 
-# Run Tipars toy test
-ENTRYPOINT [ "/bin/bash" ]
-CMD /tipars/tipars -t /tipars/Benchmark_datasets/NDV/NDV_tree.nwk -s /tipars/Benchmark_datasets/NDV/NDV_taxa.fas -a /tipars/Benchmark_datasets/NDV/NDV_anc.fas -q /tipars/Benchmark_datasets/NDV/NDV_query.fas -o /tipars/Benchmark_datasets/NDV/tipars.tree
+# Default CMD: Tipars toy test
+CMD ["/tipars/tipars", "-t", "/tipars/Benchmark_datasets/NDV/NDV_tree.nwk", "-s", "/tipars/Benchmark_datasets/NDV/NDV_taxa.fas", "-a", "/tipars/Benchmark_datasets/NDV/NDV_anc.fas", "-q", "/tipars/Benchmark_datasets/NDV/NDV_query.fas", "-o", "/tipars/Benchmark_datasets/NDV/tipars.tree"]
