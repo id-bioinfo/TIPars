@@ -52,7 +52,7 @@ Given a reference tree (-t) and alignments of taxa and ancestral sequences (-s a
 TIPars would placement a set of **aligned** query samples (-q) to `jplace` placement file
 or insert them to `newick` tree file according to user setting model (-p).
 
-TIPars excpets nucleotides by default, please use `-aa` for protein sequences that uses Blosum62 scoring matrix instead.
+TIPars expects nucleotides by default, please use `-aa` for protein sequences that uses Blosum62 scoring matrix instead.
 
 ```bash
 ./tipars -aa (optional) \
