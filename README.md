@@ -131,18 +131,9 @@ More details can be check in ([link](https://github.com/id-bioinfo/TIPars/tree/m
 # Docker setup
 We provided a Dockerfile for building Docker image, based on Ubuntu 22.04. The Dockerfile installed all nessesary software and libraries needed to run TIPars and ancestral sequence reconstruction using PastML (reconstructAncestralSeq). Here is how to use it:
 1. Make sure you have Docker installed and running.
-2. Download this Github files and change directory to the root of this repository.
-```bash
-git clone https://github.com/id-bioinfo/TIPars.git
-cd TIPars
-```
-3. Build up the docker image which may takes some times.
-```bash
-sudo docker build -t tipars . --no-cache
-```
-4. Set a shared directory in your host computer (shared with the docker container) and put all input files required to run TIPars or reconstructAncestralSeq to it. 
+2. Set a shared directory in your host computer (shared with the docker container) and put all input files required to run TIPars or reconstructAncestralSeq to it. 
 
-5. To run TIPars or reconstructAncestralSeq in any directory of your host computer.
+3. To run TIPars or reconstructAncestralSeq in any directory of your host computer.
 
 + Tipars
 
@@ -152,7 +143,7 @@ Example (A toy test of NDV dataset in the Benchmark_datasets):
 ```bash
 MY_PATH=/home/ytye/TIPars/Benchmark_datasets/NDV 
 cd $MY_PATH
-sudo docker run --rm -v $MY_PATH:/home tipars /tipars/tipars -t /home/NDV_tree.nwk -s /home/NDV_taxa.fas -a /home/NDV_anc.fas -q /home/NDV_query.fas -o /home/tipars.tree
+sudo docker run --rm -v $MY_PATH:/home ghcr.io/id-bioinfo/tipars:1.1.1 /tipars/tipars -t /home/NDV_tree.nwk -s /home/NDV_taxa.fas -a /home/NDV_anc.fas -q /home/NDV_query.fas -o /home/tipars.tree
 ```
 + reconstructAncestralSeq
 
@@ -162,12 +153,12 @@ Example (a small trial data in the reconstructAncestralSeq directory):
 ```bash
 MY_PATH=/home/ytye/TIPars/reconstructAncestralSeq/
 cd $MY_PATH && mkdir outdir
-sudo docker run --rm -v $MY_PATH:/home -w /tipars/reconstructAncestralSeq tipars perl reconstructAncestralSeq.pl /home/trial.tree /home/trial.fasta /home/outdir 4
+sudo docker run --rm -v $MY_PATH:/home -w /tipars/reconstructAncestralSeq ghcr.io/id-bioinfo/tipars:1.1.1 perl reconstructAncestralSeq.pl /home/trial.tree /home/trial.fasta /home/outdir 4
 ``` 
 
 ${MY_PATH} is the absolute path of shared directory created in step 4.
 
-6. The output will be in the shared directory ${MY_PATH}.
+5. The output will be in the shared directory ${MY_PATH}.
 
 # How to Cite
 
