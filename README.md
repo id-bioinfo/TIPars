@@ -132,7 +132,6 @@ More details can be check in ([link](https://github.com/id-bioinfo/TIPars/tree/m
 We provided a Dockerfile for building Docker image, based on Ubuntu 22.04. The Dockerfile installed all nessesary software and libraries needed to run TIPars and ancestral sequence reconstruction using PastML (reconstructAncestralSeq). Here is how to use it:
 1. Make sure you have Docker installed and running.
 2. Set a shared directory in your host computer (shared with the docker container) and put all input files required to run TIPars or reconstructAncestralSeq to it. 
-
 3. To run TIPars or reconstructAncestralSeq in any directory of your host computer.
 
 + Tipars
