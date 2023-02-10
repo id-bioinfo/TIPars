@@ -136,7 +136,7 @@ We provided a Dockerfile for building Docker image, based on Ubuntu 22.04. The D
 
 + Tipars
 
-`sudo docker run --rm -v ${MY_PATH}:/home tipars /tipars/tipars -t /home/<tree file name> -s /home/<taxa file name> -a /home/<anc file name> -q /home/<query file name> -o /home/<output file name>`
+`sudo docker run --rm -v ${MY_PATH}:/home ghcr.io/id-bioinfo/tipars:1.1.1 /tipars/tipars -t /home/<tree file name> -s /home/<taxa file name> -a /home/<anc file name> -q /home/<query file name> -o /home/<output file name>`
 
 Example (A toy test of NDV dataset in the Benchmark_datasets):
 ```bash
@@ -146,7 +146,7 @@ sudo docker run --rm -v $MY_PATH:/home ghcr.io/id-bioinfo/tipars:1.1.1 /tipars/t
 ```
 + reconstructAncestralSeq
 
-create a folder ${outdir} at the shared directory to store the ancestral sequecnes, and then run reconstructAncestralSeq `sudo docker run --rm -v ${MY_PATH}:/home -w /tipars/reconstructAncestralSeq tipars perl reconstructAncestralSeq.pl /home/<tree file name> /home/<taxa file name> /home/${outdir} <number of parallel processes>`
+create a folder ${outdir} at the shared directory to store the ancestral sequecnes, and then run reconstructAncestralSeq `sudo docker run --rm -v ${MY_PATH}:/home -w /tipars/reconstructAncestralSeq ghcr.io/id-bioinfo/tipars:1.1.1 perl reconstructAncestralSeq.pl /home/<tree file name> /home/<taxa file name> /home/${outdir} <number of parallel processes>`
 
 Example (a small trial data in the reconstructAncestralSeq directory):
 ```bash
@@ -157,7 +157,7 @@ sudo docker run --rm -v $MY_PATH:/home -w /tipars/reconstructAncestralSeq ghcr.i
 
 ${MY_PATH} is the absolute path of shared directory created in step 4.
 
-5. The output will be in the shared directory ${MY_PATH}.
+4. The output will be in the shared directory ${MY_PATH}.
 
 # How to Cite
 
