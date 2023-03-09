@@ -2047,8 +2047,7 @@ public class TIPars{
             System.out.println("vcf/fasta total parse time: " + (double) parseTotalTime/1000);
             
             long parseTreeStartTime = System.currentTimeMillis();
-            // TODO:  pass Tree as param, deserialized it in other function 
-            NewickImporter tni = new NewickImporter(new FileReader(intfn));
+            NewickImporter tni = new NewickImporter(new FileReader(treeBufferedReader));
             Tree tree = tni.importTree(null);
             long parseTreeTotalTime = System.currentTimeMillis() - parseTreeStartTime;
             System.out.println("tree parse time: " + (double) parseTreeTotalTime/1000);
