@@ -4,8 +4,11 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -129,19 +132,13 @@ public class TIPars{
     }
 
 	//Interface API
-    public Tree addQuerySequence(String qname, ConcurrentHashMap<Integer, Byte> nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
+    public String addQuerySequence(String qname, ConcurrentHashMap<Integer, Byte> nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
            double[] ABQ_brlen, String otype, int ii){
     	return addQuerySequence_global(qname, nodeQseq, qid, pid, printDisInfoOnScreen, ABQ_brlen, otype, ii);
     }
     
-    public Tree addQuerySequence(String qname, String nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
-            double[] ABQ_brlen, String otype, int ii){
-    	return addQuerySequence_global(qname, nodeQseq, qid, pid, printDisInfoOnScreen, ABQ_brlen, otype, ii);
-    }   
-    
-    // Travel all internal nodes for all possible nodeA-nodeB pairs
     //for vcf file
-    public Tree addQuerySequence_global(String qname, ConcurrentHashMap<Integer, Byte> nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
+    public String addQuerySequence_global(String qname, ConcurrentHashMap<Integer, Byte> nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
             double[] ABQ_brlen, String otype, int ii){
          
     	minGlobalMemoryBranchScore = Double.MAX_VALUE;   
@@ -243,279 +240,12 @@ public class TIPars{
             if(printDisInfoOnScreen)
             {
            	    if(k == 0)  //the best inserted branch
-           		    System.out.println(qname + "\t" + "*" +  selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2]);
-           	    else
-           		    System.out.println(qname + "\t" +  selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2]);
-            }
-            
-            ///for placement only
-            if (otype.equals("placement")) {
-         	    placementStrings += "[" + node2edge.get((FlexibleNode) mytree.getNode(selectedNodeBIndex)) + ", " + ABQ_brlen[0]  + ", " + ABQ_brlen[2] +  "]";
-         	    if(k < selectedNodeList.size()-1) placementStrings += ",\n\t";
-         	    else placementStrings += "\n\t";
-            }
-           
-            if(k > 0) continue;
-           
-            // real add the query node to the Tree copy.
-            MyFlexibleTree mynewTree = new MyFlexibleTree(mytree, true);
-            this.copyAttributeFromOneNodeToAnother((FlexibleNode)mytree.getRoot(), (FlexibleNode)mynewTree.getRoot());
-           
-            mynewTree.beginTreeEdit();
-            FlexibleNode selected_nodeB = (FlexibleNode)mynewTree.getNode(selectedNodeBIndex);
-
-            FlexibleNode selected_nodeA = selected_nodeB.getParent();
-            Taxon qtaxon = new Taxon(qname);
-            FlexibleNode selected_nodeQ = new FlexibleNode(qtaxon);
-            selected_nodeQ.setLength(pqlen);
-
-            FlexibleNode selected_nodeP = new FlexibleNode();
-            // set the attributes of newly added node.
-            selected_nodeP.setAttribute(internalnode_nidname, pid);
-            selected_nodeQ.setAttribute(internalnode_nidname, qname);
-            if(selectedScores[1] <= MinDoubleNumLimit){  // P-B is zero branch length, meaning that Q is inserted into B directly.
-           	if(selected_nodeB.isExternal()) { // If B is leaf, cannot add the Q directly there, must add P node.
-                   selected_nodeP.setLength(original_branchAB);
-                   selected_nodeP.addChild(selected_nodeQ);
-                   selected_nodeA.addChild(selected_nodeP);
-                   
-                   selected_nodeB.setLength(0.0);
-                   selected_nodeA.removeChild(selected_nodeB);
-                   selected_nodeP.addChild(selected_nodeB);
-                } 
-                else {
-                   selected_nodeB.addChild(selected_nodeQ);
-                }
-            }
-            else if(selectedScores[0] <= MinDoubleNumLimit){ // A-P is zero branch length, meaning that Q is inserted into A directly.
-                selected_nodeP = selected_nodeA;
-                selected_nodeA.addChild(selected_nodeQ);  
-            }
-            else {
-                selected_nodeP.setLength(ABQ_brlen[0]);
-                selected_nodeB.setLength(ABQ_brlen[1]);
-               
-                selected_nodeP.addChild(selected_nodeQ);
-                selected_nodeA.addChild(selected_nodeP);
-               
-                selected_nodeA.removeChild(selected_nodeB);
-                selected_nodeP.addChild(selected_nodeB);
-            }
-           
-            mynewTree.endTreeEdit();
-
-            //adding the query sequence for next insertion
-            if(!seqIdxMap.containsKey(qname))
-            {
-           	    seqIdxMap.put(qname, multationSequencesMap.size());
-           	    multationSequencesMap.add(nodeQseq);
-            }
-            if(!seqIdxMap.containsKey(pid))
-            {
-           	    seqIdxMap.put(pid, multationSequencesMap.size());
-           	    multationSequencesMap.add(nodePseq);
-            }
-
-            //output the new added p node
-            if (OUTPUT_PNODE)
-            {
-           	    writeMutation(pid, nodePseq, OUTPUT_FOLDER);
-            }
-           
-            mynewTree.toAdoptNodes((FlexibleNode)mynewTree.getRoot());
-            best_mynewTree = mynewTree;
+           		    return qname + "\t" + "*" +  selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2];
+           	    //else
+           		    //System.out.println(qname + "\t" +  selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2]);
+            } 
         }
-        ///to generate jplace file format info string
-        if (otype.equals("placement")) {
-    	    String placeInfo = "\t{\"p\":[\n\t" +  placementStrings +  "],\n\t" + "\"n\":[\"" + qname + "\"]}";
-            placements[ii] = placeInfo;
-            return mytree;
-        }
-        return best_mynewTree;
-    }
-
-    
-    ///for fasta file
-    public Tree addQuerySequence_global(String qname, String nodeQseq, String qid, String pid, boolean printDisInfoOnScreen,
-           double[] ABQ_brlen, String otype, int ii){
-        // Travel all internal nodes for all possible nodeA-nodeB pairs
-    	
-    	minGlobalMemoryBranchScore = Double.MAX_VALUE;   
-    	minGlobalMemoryBranchScoreNodeList.clear();
-    	///if parallel computes branchscore is bigger than minGlobalMemoryBranchScore, the calculation will stop.
-        ArrayList<Integer> nodeIdxAndScoreList = new ArrayList<Integer>(mytree.getNodeCount());
-        ////initialize the nodeIdxAndScoreList to store nodeIdx
-        for(int i=0; i<mytree.getNodeCount(); ++i)
-        {
-        	nodeIdxAndScoreList.add(i);
-        }
-
-        ////parallel to compute branchScore for every branch
-        nodeIdxAndScoreList.parallelStream()
-        .forEach(nodeIdx ->
-            {
-                double score = computeBranchScore(nodeIdx, nodeQseq, qname);
-            }
-        );
-
-        ArrayList<FlexibleNode> selectedNodeList = minGlobalMemoryBranchScoreNodeList;
-        if(DEBUG)
-     		System.out.println("minQScore: " + minGlobalMemoryBranchScore + ", selectedNodeList:" + selectedNodeList.size());
-
-        ////try to remove ambiguous results
-        selectedNodeList = reduceAmbiguousBranch(selectedNodeList, isMultiplePlacements);
-
-        MyFlexibleTree best_mynewTree = null;
-      
-        String placementStrings = "";
-        for(int k=0; k < selectedNodeList.size(); ++k)
-        {
-    	    FlexibleNode selectedNode = selectedNodeList.get(k); 
-			
-  		    int selectedNodeBIndex = selectedNode.getNumber();
-  		    String nodeAseq = getStringSequenceByNode((FlexibleNode)selectedNode.getParent());
-  		    String nodeBseq = getStringSequenceByNode(selectedNode);
-
-  		    Double[] selectedScores = new Double[3];
-  		    selectedScores[0] = (double) get_num_leaves(selectedNode.getParent());
-  		    selectedScores[1] = (double) get_num_leaves(selectedNode);
-  		    String nodePseq = getStringAndScoreFromNodeABQSeq(nodeAseq, nodeBseq, nodeQseq, selectedScores);
-  		
-  		    String selectedBnid = (String)selectedNode.getAttribute(internalnode_nidname);
-            if (selectedBnid == null) {
-                selectedBnid = selectedNode.getTaxon().getId();
-            }
-            String selectAName =  (String)selectedNode.getParent().getAttribute(internalnode_nidname);
-
-            // Q-P pendent length local estimation
-            double pqlen = 0.0;
-            if(selectedScores[2] <= MinDoubleNumLimit) pqlen = 0.0;
-            else ///selectedScores[2] > Double.MIN_VALUE
-            {
-        	    double scoreAB = computeNodeScore(nodeAseq, nodeBseq);
-        	    FlexibleNode myNodeB = selectedNode;
-        	    FlexibleNode myNodeA = myNodeB.getParent();
-        	    while((scoreAB <= MinDoubleNumLimit || myNodeB.getLength() <= MinDoubleNumLimit) && !myNodeA.isRoot())
-        	    {
-        		    myNodeB = myNodeA;
-        		    myNodeA = myNodeB.getParent();
-        		    scoreAB = computeNodeScore(getStringSequenceByNode(myNodeA), getStringSequenceByNode(myNodeB));
-        	    }
-        	    if(scoreAB > MinDoubleNumLimit && myNodeB.getLength() > MinDoubleNumLimit)
-        		    pqlen = localEstimation(selectedScores[2], scoreAB, myNodeB.getLength());
-        	    else
-        	    {
-        		    double p = selectedScores[2]/((double)getAlignmentLength());
-                    pqlen = JC69(p);
-        	    }
-            }
-        
-            double original_branchAB = selectedNode.getLength();
-            if(selectedScores[1] <= MinDoubleNumLimit){
-        	    ABQ_brlen[0] = original_branchAB;
-        	    ABQ_brlen[1] = 0.0;
-        	    ABQ_brlen[2] = pqlen;
-            }
-            else if(selectedScores[0] <= MinDoubleNumLimit)
-            {
-        	    ABQ_brlen[0] = 0.0;
-                ABQ_brlen[1] = original_branchAB;
-                ABQ_brlen[2] = pqlen;
-            }
-            else {
-        	    double Pratio = selectedScores[0]/((double)(selectedScores[0]+selectedScores[1]));
-        	    double newNodePLength = original_branchAB*Pratio;
-                double newNodeBLength = original_branchAB*(1.0-Pratio);
-            
-        	    ABQ_brlen[0] = newNodePLength;
-                ABQ_brlen[1] = newNodeBLength;
-                ABQ_brlen[2] = pqlen;
-            }
-
-            if(printDisInfoOnScreen)
-            {
-        	    if(k == 0)
-        		    System.out.println(qname + "\t" + "*" +  selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2]);
-        	    else
-        		    System.out.println(qname + "\t" +  selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2]);
-            }
-          
-            if (otype.equals("placement")) {
-        	    placementStrings += "[" + node2edge.get((FlexibleNode) mytree.getNode(selectedNodeBIndex)) + ", " + ABQ_brlen[0]  + ", " + ABQ_brlen[2] +  "]";
-        	    if(k < selectedNodeList.size()-1) placementStrings += ",\n\t";
-        	    else placementStrings += "\n\t";
-            }
-
-            if(k > 0) continue;
-        
-            // add the query node to the Tree copy.
-            MyFlexibleTree mynewTree = new MyFlexibleTree(mytree, true);
-            this.copyAttributeFromOneNodeToAnother((FlexibleNode)mytree.getRoot(), (FlexibleNode)mynewTree.getRoot());
-
-            mynewTree.beginTreeEdit();
-            FlexibleNode selected_nodeB = (FlexibleNode)mynewTree.getNode(selectedNodeBIndex);
-            FlexibleNode selected_nodeA = selected_nodeB.getParent();
-            Taxon qtaxon = new Taxon(qname);
-            FlexibleNode selected_nodeQ = new FlexibleNode(qtaxon);
-            selected_nodeQ.setLength(pqlen);
-
-            FlexibleNode selected_nodeP = new FlexibleNode();
-            // set the attributes of newly added node.
-            selected_nodeP.setAttribute(this.internalnode_nidname, pid);
-            selected_nodeQ.setAttribute(this.internalnode_nidname, qname);
-            double original_scoreAB = computeNodeScore(nodeAseq, nodeBseq);
-            if(selectedScores[1] <= MinDoubleNumLimit){  // P-B is zero branch length, meaning that Q is inserted into B directly.
-          	    if(selected_nodeB.isExternal()) { // If B is leaf, cannot add the Q directly there, must add P node.
-                    selected_nodeP.setLength(original_branchAB);
-                    selected_nodeP.addChild(selected_nodeQ);
-                    selected_nodeA.addChild(selected_nodeP);
-                  
-                    selected_nodeB.setLength(0.0);
-                    selected_nodeA.removeChild(selected_nodeB);
-                    selected_nodeP.addChild(selected_nodeB);
-                } 
-                else {
-                    selected_nodeB.addChild(selected_nodeQ);
-                }
-            }
-            else if(selectedScores[0] <= MinDoubleNumLimit){ // A-P is zero branch length, meaning that Q is inserted into A directly.
-                selected_nodeP = selected_nodeA;
-                selected_nodeA.addChild(selected_nodeQ);  
-            }
-            else {
-          	    selected_nodeP.setLength(ABQ_brlen[0]);
-                selected_nodeB.setLength(ABQ_brlen[1]);
-              
-                selected_nodeP.addChild(selected_nodeQ);
-                selected_nodeA.addChild(selected_nodeP);
-              
-                selected_nodeA.removeChild(selected_nodeB);
-                selected_nodeP.addChild(selected_nodeB);
-            }
-            mynewTree.endTreeEdit();
-            if(!seqIdxMap.containsKey(qname))
-            {
-          	    seqIdxMap.put(qname, stringSequencesList.size());
-          	    stringSequencesList.add(nodeQseq);
-            }
-            if(!seqIdxMap.containsKey(pid))
-            {
-          	    seqIdxMap.put(pid, stringSequencesList.size());
-          	    stringSequencesList.add(nodePseq);
-            }
-            if (OUTPUT_PNODE)
-            {
-          	    writeFASTA(pid, nodePseq, OUTPUT_FOLDER);
-            }
-            mynewTree.toAdoptNodes((FlexibleNode)mynewTree.getRoot());
-            best_mynewTree = mynewTree;  
-        }
-        if (otype.equals("placement")) {
-    	    String placeInfo = "\t{\"p\":[\n\t" +  placementStrings +  "],\n\t" + "\"n\":[\"" + qname + "\"]}";
-            placements[ii] = placeInfo;
-            return mytree;
-        }
-        return best_mynewTree;
+        return "error 02";
     }
     
     ///compute the branchscore that nodeQseq difference from both nodeA and nodeB
@@ -2163,15 +1893,12 @@ public class TIPars{
     	return NodeScoreBigTable;
     }
     
-    public static void main(String[] args) { 
-     	
-    	
-    	
+    public static String runMainVCF(String inqfn, Boolean isMultiplePlacements, InputStream multationSequenceMapInputStream, InputStream seqIdxMapInputStream, InputStream refSequenceInputStream, BufferedReader treeBufferedReader) { 	
         String insfn = "";
-        String intfn = "";
+        String intfn = "/tipars/ser_obj/input.tree";
         String inafn = "";
-        String inqfn = "";
-        String informat   = "fasta";
+        // String inqfn = "";
+        String informat = "vcf";
         String outfn = "";
         String otype = "insertion";
         Boolean aa_flag = false;
@@ -2187,60 +1914,144 @@ public class TIPars{
         _aminoacid_scoreTable = generate_aminoacid_scoreTable(); //Amino acid substitution table using blosum62 matrix
 
         try{
-        	intfn = args[0];
-        	insfn = args[1];
-            inafn = args[2];
-            inqfn = args[3];    
-            informat = args[4];   
-            isMultiplePlacements = Boolean.parseBoolean(args[5]);
-            outfn = args[6];
-            otype = args[7];  
-            printDisInfoOnScreen = Boolean.parseBoolean(args[8]);
-            aa_flag = Boolean.parseBoolean(args[9]);
+        	// intfn = args[0];
+        	// insfn = args[1];
+            // inafn = args[2];
+            // inqfn = args[3];    
+            // informat = args[4];   
+            // isMultiplePlacements = Boolean.parseBoolean(args[5]);
+            // outfn = args[6];
+            // otype = args[7];  
+            // printDisInfoOnScreen = Boolean.parseBoolean(args[8]);
+            // aa_flag = Boolean.parseBoolean(args[9]);
             //"insertion_vcf","insertion_vcf","insertion","placement"
          	Runtime run = Runtime.getRuntime();
             long startTime = System.currentTimeMillis();
-            String output_folder = getFolder(outfn);
+            String output_folder = "/tmp";
             
-            System.out.println("TIPars Version 1.1.0: Robust expansion of phylogeny for fast-growing genome sequence data");
-            System.out.println("TreeFile: " + intfn);
-            System.out.println("TaxaFile: " + insfn);
-            System.out.println("AncestralSequenceFile: " + inafn);
-            System.out.println("QueryFile: " + inqfn);
-            System.out.println("Model: " + otype);
+            //System.out.println("TIPars Version 1.1.0: Robust expansion of phylogeny for fast-growing genome sequence data");
+            //System.out.println("TreeFile: " + intfn);
+            //System.out.println("TaxaFile: " + insfn);
+            //System.out.println("AncestralSequenceFile: " + inafn);
+            //System.out.println("QueryFile: " + inqfn);
+            //System.out.println("Model: " + otype);
             
             //initialize scoring matrix
             _used_scoreTable = _nucleotide_nomenclature_scoreTable;
             if(aa_flag) _used_scoreTable = _aminoacid_scoreTable;
             
             HashMap<Integer, String> queryList = null;
+            long parseStartTime = System.currentTimeMillis();
             ///////read vcf file
       	    if(informat.contains("vcf") || informat.contains("Vcf") || informat.contains("VCF"))
       	    {
-      	       multationSequencesMap.clear();
-      	       seqIdxMap.clear();
-      	       Arrays.fill(ref_sequence, (byte)'\0');
-      	       readVCFAlignmentFile(insfn);
-      	       readVCFAlignmentFile(inafn);	 
+                try
+                {
+                    ObjectInputStream ois = new ObjectInputStream(multationSequenceMapInputStream);
+                    multationSequencesMap = (ArrayList) ois.readObject();
+                    ois.close();
+                    multationSequenceMapInputStream.close();
+                    System.out.println("multationSequencesMap loaded");
+                    
+                    ois = new ObjectInputStream(seqIdxMapInputStream);
+                    seqIdxMap = (HashMap) ois.readObject();
+                    ois.close();
+                    seqIdxMapInputStream.close();
+                    System.out.println("seqIdxMap loaded");
+                    
+                    ois = new ObjectInputStream(refSequenceInputStream);
+                    ref_sequence = (byte[]) ois.readObject();
+                    ois.close();
+                    refSequenceInputStream.close();
+                    System.out.println("ref_sequence loaded");
+                } catch(IOException ioe) {
+                    ioe.printStackTrace();
+                } catch(ClassNotFoundException c){
+                    System.out.println("Class not found");
+                    c.printStackTrace();
+                }
+      	       //multationSequencesMap.clear();
+      	       //seqIdxMap.clear();
+      	       //Arrays.fill(ref_sequence, (byte)'\0');
+               
+
+               //readVCFAlignmentFile(insfn);
+               //long parseEndTime1 = System.currentTimeMillis();
+               //System.out.println("readVCFAlignmentFile" + (double)(parseEndTime1 - parseStartTime)/1000);
+      	       //readVCFAlignmentFile(inafn);	 
+               //long parseEndTime2 = System.currentTimeMillis();
+               //System.out.println("readVCFAlignmentFile" + (double)(parseEndTime2 - parseEndTime1)/1000);
+
+               // Serialize multationSequenceMap, seqIdxMap, ref_sequence
+               /*
+               System.out.println("start to serialize");
+               try
+               {
+                   FileOutputStream fos = new FileOutputStream("/home/tipars_outputs/multationSequencesMap.ser");
+                   ObjectOutputStream oos = new ObjectOutputStream(fos);
+                   oos.writeObject(multationSequencesMap);
+                   oos.close();
+                   fos.close();
+                   System.out.println("Serialized MultationSequencesMap");
+               } catch(IOException ioe)
+               {
+                   ioe.printStackTrace();
+               }
+
+               try
+               {
+                   FileOutputStream fos = new FileOutputStream("/home/tipars_outputs/seqIdxMap.ser");
+                   ObjectOutputStream oos = new ObjectOutputStream(fos);
+                   oos.writeObject(seqIdxMap);
+                   oos.close();
+                   fos.close();
+                   System.out.println("Serialized seqIdxMap");
+               } catch(IOException ioe)
+               {
+                   ioe.printStackTrace();
+               }
+
+               try
+               {
+                   FileOutputStream fos = new FileOutputStream("/home/tipars_outputs/ref_sequence.ser");
+                   ObjectOutputStream oos = new ObjectOutputStream(fos);
+                   oos.writeObject(ref_sequence);
+                   oos.close();
+                   fos.close();
+                   System.out.println("Serialized ref_sequence");
+               } catch(IOException ioe)
+               {
+                   ioe.printStackTrace();
+               }
+               */
+
+                long serializeLoadTime = System.currentTimeMillis() - parseStartTime;
+                System.out.println("load serilization items time: " + (double) serializeLoadTime/1000);
+
       	       queryList = readVCFFile2Alignment(inqfn);
       	    }
       	    else 
       	    {
                   //// Read fasta file 
-                  stringSequencesList.clear();
-                  seqIdxMap.clear();
+                  //stringSequencesList.clear();
+                  //seqIdxMap.clear();
                  
                   ///input msa
-                  readFastaAlignmentFile(insfn);
+                  //readFastaAlignmentFile(insfn);
                   ///input ancestral
-                  readFastaAlignmentFile(inafn);
+                  //readFastaAlignmentFile(inafn);
                   ///input query 
-                  queryList = readFastaFile2Alignment(inqfn); 
+                 // queryList = readFastaFile2Alignment(inqfn); 
       	    }
+            long parseTotalTime = System.currentTimeMillis() - parseStartTime;
+            System.out.println("vcf/fasta total parse time: " + (double) parseTotalTime/1000);
             
-            //read tree
+            long parseTreeStartTime = System.currentTimeMillis();
+            // TODO:  pass Tree as param, deserialized it in other function 
             NewickImporter tni = new NewickImporter(new FileReader(intfn));
             Tree tree = tni.importTree(null);
+            long parseTreeTotalTime = System.currentTimeMillis() - parseTreeStartTime;
+            System.out.println("tree parse time: " + (double) parseTreeTotalTime/1000);
 
             //init TIPars
  			TIPars myAdd = new TIPars(tree, otype, output_folder);
@@ -2251,6 +2062,7 @@ public class TIPars{
             if(!printDisInfoOnScreen) System.out.print("Progress: ");
             
             String progressInfo = "";
+            String outputStr = "";
             //mutiple taxa insertion for vcf input
             if (otype.equals("insertion") && informat.contains("vcf")) {
                 ArrayList<Integer> queryIdxs = new ArrayList<Integer>(queryList.keySet());
@@ -2261,100 +2073,23 @@ public class TIPars{
                     ConcurrentHashMap<Integer, Byte> query = multationSequencesMap.get(idx);
                     String qid = "q" + (i+1);
                     String pid = "p" + (i+1);
-                    outtree = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, 0);
-                    myAdd.mytree = outtree;
-                    myAdd.setupHashtableOfnode2seqName();
-
-                    if(!printDisInfoOnScreen)
-                    {
-                        for (int j = 0; j < progressInfo.length(); j++) System.out.print("\b");
-                        progressInfo = (i+1) + "/" + queryIdxs.size();
-                        System.out.print(progressInfo);
-                        if(i == queryIdxs.size()-1) System.out.println();
-                    }
-                }
-            }
-            //mutiple taxa insertion for fasta input
-            else if (otype.equals("insertion")) {
-             	ArrayList<Integer> queryIdxs = new ArrayList<Integer>(queryList.keySet());
-                queryIdxs.sort(Comparator.naturalOrder());
-                for (int i=0; i<queryIdxs.size(); i++) {
-                 	int idx = queryIdxs.get(i);
-                 	String name = queryList.get(idx);
-                    String query = stringSequencesList.get(idx);
-                    String qid = "q" + (i+1);
-                    String pid = "p" + (i+1);
-                    outtree = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, 0);
-                    myAdd.mytree = outtree;
-                    myAdd.setupHashtableOfnode2seqName();
-
-                    if(!printDisInfoOnScreen)
-                    {
-                        for (int j = 0; j < progressInfo.length(); j++) System.out.print("\b");
-                        progressInfo = (i+1) + "/" + queryIdxs.size();
-                        System.out.print(progressInfo);
-                        if(i == queryIdxs.size()-1) System.out.println();
-                    }
-                }
-            } 
-            //mutiple taxa placement for vcf input
-            else if(otype.equals("placement")  && informat.contains("vcf")){
-            	ArrayList<Integer> queryIdxs = new ArrayList<Integer>(queryList.keySet());
-                queryIdxs.sort(Comparator.naturalOrder());
-                placements = new String[queryIdxs.size()];
-                for (int i=0; i<queryIdxs.size(); i++) {
-                 	int idx = queryIdxs.get(i);
-                    String name = queryList.get(idx);
-                    ConcurrentHashMap<Integer, Byte> query = multationSequencesMap.get(idx);
-                    String qid = "q" + (i+1);
-                    String pid = "p" + (i+1);
-                    outtree = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, i);
-
-                    if(!printDisInfoOnScreen)
-                    {
-                        for (int j = 0; j < progressInfo.length(); j++) System.out.print("\b");
-                        progressInfo = (i+1) + "/" + queryIdxs.size();
-                        System.out.print(progressInfo);
-                        if(i == queryIdxs.size()-1) System.out.println();
-                    }
-                }
-            }
-            //mutiple taxa placement for fasta input
-            else if(otype.equals("placement")){
-             	ArrayList<Integer> queryIdxs = new ArrayList<Integer>(queryList.keySet());
-                queryIdxs.sort(Comparator.naturalOrder());
-                placements = new String[queryIdxs.size()];
-                for (int i=0; i<queryIdxs.size(); i++) {
-                 	int idx = queryIdxs.get(i);
-                 	String name = queryList.get(idx);
-                    String query = stringSequencesList.get(idx);
-                    String qid = "q" + (i+1);
-                    String pid = "p" + (i+1);
-                    outtree = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, i);
-
-                    if(!printDisInfoOnScreen)
-                    {
-                        for (int j = 0; j < progressInfo.length(); j++) System.out.print("\b");
-                        progressInfo = (i+1) + "/" + queryIdxs.size();
-                        System.out.print(progressInfo);
-                        if(i == queryIdxs.size()-1) System.out.println();
-                    }
+                    outputStr = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, 0);
                 }
             }
             long endTime2 = System.currentTimeMillis();
             long totalTime2 = endTime2 - startTime2;
-             
-            if(outtree != null)
-            writeToTree(outtree, outfn, otype);
 
-            long endTime = System.currentTimeMillis();
-            long totalTime = endTime - startTime;
-             
             System.out.println("Insertion time: " + (double) totalTime2/1000);
-            System.out.println("Overall time: " + (double) totalTime/1000);
+            return outputStr;
         }
         catch(Exception e){
             e.printStackTrace();
+            return "error";
         }
+    }
+
+    public static void main(String[] args) {
+        String output = runMainVCF(args[0], false, "/tipars/ser_obj/multationSequencesMap.ser", "/tipars/ser_obj/seqIdxMap.ser", "/tipars/ser_obj/ref_sequence.ser");
+        System.out.println(output);
     }
 }
