@@ -138,14 +138,14 @@ for($m =0; $m<$length;$m++){
 print "FILE GENERATION FOR PASTML COMPLETED!!!\n\n";
 
 print "Step3: ADDITION OF INNODE NAME TO TREE FILE...\n\n";
-$cmd = "source activate ete3-py2 && python /code/TIPars/reconstructAncestralSeq/TREEMANUPULATION_AddInnodeNameToTreeByArgument.py ".$tree." && conda deactivate";
+$cmd = "source activate ete3-py2 && python /code/TIPars/reconstructAncestralSeq/TREEMANUPULATION_AddInnodeNameToTreeByArgument.py ".$tree." && source deactivate";
 $cpd = `$cmd`;
 print "Addition of Name Completed!!!\n\n";
 
 print "Step4: START RUNNING PASTML......\n\n";
 
 for($i=1;$i<$y;$i++){
-	$cmd = "source activate pastml-py3-4 && pastml --tree ./".$tree."_InnodeNameAdded --data position_".$i.".txt --columns NUCL --prediction_method ACCTRAN --work_dir position_".$i."_generated.txt && conda deactivate";
+	$cmd = "source activate pastml-py3-4 && pastml --tree ./".$tree."_InnodeNameAdded --data position_".$i.".txt --columns NUCL --prediction_method ACCTRAN --work_dir position_".$i."_generated.txt && source deactivate";
 	$cpd = `$cmd`;
 }
 
