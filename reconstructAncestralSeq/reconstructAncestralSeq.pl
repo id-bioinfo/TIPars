@@ -138,7 +138,7 @@ for($m =0; $m<$length;$m++){
 print "FILE GENERATION FOR PASTML COMPLETED!!!\n\n";
 
 print "Step3: ADDITION OF INNODE NAME TO TREE FILE...\n\n";
-$cmd = "source activate ete3-py2 && python /code/TIPars/reconstructAncestralSeq/TREEMANUPULATION_AddInnodeNameToTreeByArgument.py ".$tree." && source deactivate";
+$cmd = "source activate ete3-py2 && python2 /code/TIPars/reconstructAncestralSeq/TREEMANUPULATION_AddInnodeNameToTreeByArgument.py ".$tree." && source deactivate";
 $cpd = `$cmd`;
 print "Addition of Name Completed!!!\n\n";
 
