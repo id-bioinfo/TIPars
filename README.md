@@ -1,3 +1,7 @@
+# WebApp
+
+TIPars WebApp is available online at [www.tipars.hku.hk](https://tipars.hku.hk/)
+
 # Robust expansion of phylogeny for fast-growing genome sequence data
 
 TIPars is JAVA program to do fast and accurate insertion or placement of new samples onto 
