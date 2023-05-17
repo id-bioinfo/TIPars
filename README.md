@@ -1,6 +1,6 @@
 # WebApp
 
-TIPars WebApp is available online at [www.tipars.hku.hk](https://tipars.hku.hk/)
+TIPars is available online at [www.tipars.hku.hk](https://tipars.hku.hk/), with Influenza A/H5 reference tree ready for insertion [here](https://tipars.hku.hk/reference/Influenza-A-H5)
 
 # Robust expansion of phylogeny for fast-growing genome sequence data
 
