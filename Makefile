@@ -1,7 +1,7 @@
 TIPars: TIPars.java
-	javac -classpath .:beast.jar TIPars.java;\
-	jar cvfm TIPars.jar MANIFEST.MF *class;\
-	rm -rf *class
+	javac -classpath .:beast.jar ./tippack/TIPars.java;\
+	jar cvfm TIPars.jar MANIFEST.MF ./tippack/*class;\
+	rm -rf ./tippack/*class
 
 test: TIPars
 	java -classpath .:beast.jar TIPars FourExamples/Try1_KC542905/NDV_fullg.tree FourExamples/Try1_KC542905/NDV_fullg.fas FourExamples/Try1_KC542905/anc_NDV_fullg.fas FourExamples/Try1_KC542905/KC542905.fas test.tree 1 label GenName
