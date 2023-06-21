@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
@@ -1338,12 +1339,12 @@ public class TIPars{
     }
     
     ////read vcf file to a hashmap
-    public static HashMap<Integer, String> readVCFFile2Alignment(String fn){
+    public static HashMap<Integer, String> readVCFFile2Alignment(InputStream input){
     	HashMap<Integer, String> alignmnetIdxList = new HashMap<Integer, String>();
         int startIndex = multationSequencesMap.size();
         boolean header_found = false;
         try{
-            BufferedReader br2 = new BufferedReader(new InputStreamReader(new FileInputStream(fn)));
+            BufferedReader br2 = new BufferedReader(new InputStreamReader(input));
                 
             ////read header
             while(!header_found){
@@ -1893,9 +1894,9 @@ public class TIPars{
     	return NodeScoreBigTable;
     }
     
-    public static String runMainVCF(String inqfn, Boolean isMultiplePlacements, InputStream multationSequenceMapInputStream, InputStream seqIdxMapInputStream, InputStream refSequenceInputStream, BufferedReader treeBufferedReader) { 	
+    public static String runMainVCF(InputStream queryVCFInputStream, Boolean isMultiplePlacements, InputStream multationSequenceMapInputStream, InputStream seqIdxMapInputStream, InputStream refSequenceInputStream, BufferedReader treeBufferedReader) { 	
         String insfn = "";
-        String intfn = "/tipars/ser_obj/input.tree";
+        // String intfn = "/tipars/ser_obj/input.tree";
         String inafn = "";
         // String inqfn = "";
         String informat = "vcf";
@@ -2028,7 +2029,7 @@ public class TIPars{
                 long serializeLoadTime = System.currentTimeMillis() - parseStartTime;
                 System.out.println("load serilization items time: " + (double) serializeLoadTime/1000);
 
-      	       queryList = readVCFFile2Alignment(inqfn);
+      	       queryList = readVCFFile2Alignment(queryVCFInputStream);
       	    }
       	    else 
       	    {
@@ -2047,7 +2048,7 @@ public class TIPars{
             System.out.println("vcf/fasta total parse time: " + (double) parseTotalTime/1000);
             
             long parseTreeStartTime = System.currentTimeMillis();
-            NewickImporter tni = new NewickImporter(new FileReader(treeBufferedReader));
+            NewickImporter tni = new NewickImporter(treeBufferedReader);
             Tree tree = tni.importTree(null);
             long parseTreeTotalTime = System.currentTimeMillis() - parseTreeStartTime;
             System.out.println("tree parse time: " + (double) parseTreeTotalTime/1000);
@@ -2063,17 +2064,15 @@ public class TIPars{
             String progressInfo = "";
             String outputStr = "";
             //mutiple taxa insertion for vcf input
-            if (otype.equals("insertion") && informat.contains("vcf")) {
-                ArrayList<Integer> queryIdxs = new ArrayList<Integer>(queryList.keySet());
-                queryIdxs.sort(Comparator.naturalOrder());
-                for (int i=0; i<queryIdxs.size(); i++) {
-                 	int idx = queryIdxs.get(i);
-                    String name = queryList.get(idx);
-                    ConcurrentHashMap<Integer, Byte> query = multationSequencesMap.get(idx);
-                    String qid = "q" + (i+1);
-                    String pid = "p" + (i+1);
-                    outputStr = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, 0);
-                }
+            ArrayList<Integer> queryIdxs = new ArrayList<Integer>(queryList.keySet());
+            queryIdxs.sort(Comparator.naturalOrder());
+            for (int i=0; i<queryIdxs.size(); i++) {
+                int idx = queryIdxs.get(i);
+                String name = queryList.get(idx);
+                ConcurrentHashMap<Integer, Byte> query = multationSequencesMap.get(idx);
+                String qid = "q" + (i+1);
+                String pid = "p" + (i+1);
+                outputStr = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype, 0);
             }
             long endTime2 = System.currentTimeMillis();
             long totalTime2 = endTime2 - startTime2;
@@ -2088,7 +2087,16 @@ public class TIPars{
     }
 
     public static void main(String[] args) {
-        String output = runMainVCF(args[0], false, "/tipars/ser_obj/multationSequencesMap.ser", "/tipars/ser_obj/seqIdxMap.ser", "/tipars/ser_obj/ref_sequence.ser");
-        System.out.println(output);
+        try {
+            FileInputStream ifsq = new FileInputStream(args[0]);
+            FileInputStream ifsm = new FileInputStream("/tipars/ser_obj/multationSequencesMap.ser");
+            FileInputStream ifss = new FileInputStream("/tipars/ser_obj/seqIdxMap.ser");
+            FileInputStream ifsr = new FileInputStream("/tipars/ser_obj/ref_sequence.ser");
+            BufferedReader ifst = new BufferedReader(new FileReader("/tipars/ser_obj/input.tree"));
+            String output = runMainVCF(ifsq, false, ifsm, ifss, ifsr, ifst);
+            System.out.println(output);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 }
