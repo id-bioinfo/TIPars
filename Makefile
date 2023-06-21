@@ -1,4 +1,4 @@
-TIPars: TIPars.java
+TIPars: ./tippack/TIPars.java
 	javac -classpath .:beast.jar ./tippack/TIPars.java;\
 	jar cvfm TIPars.jar MANIFEST.MF ./tippack/*class;\
 	rm -rf ./tippack/*class
