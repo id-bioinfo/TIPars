@@ -1979,12 +1979,13 @@ public class TIPars {
     // }
 
     public static void main(String[] args) {
+        
         try {
             FileInputStream ifsq = new FileInputStream(args[0]);
-            FileInputStream ifsm = new FileInputStream("/tipars/ser_obj/multationSequencesMap.ser");
-            FileInputStream ifss = new FileInputStream("/tipars/ser_obj/seqIdxMap.ser");
-            FileInputStream ifsr = new FileInputStream("/tipars/ser_obj/ref_sequence.ser");
-            BufferedReader ifst = new BufferedReader(new FileReader("/tipars/ser_obj/input.tree"));
+            FileInputStream ifsm = new FileInputStream(args[2]);
+            FileInputStream ifss = new FileInputStream(args[3]);
+            FileInputStream ifsr = new FileInputStream(args[4]);
+            BufferedReader ifst = new BufferedReader(new FileReader(args[1]));
             String[] outputs = runMainVCF(ifsq, false, ifsm, ifss, ifsr, ifst);
             System.out.println(Arrays.toString(outputs));
         } catch (FileNotFoundException e) {
