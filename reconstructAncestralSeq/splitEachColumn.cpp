@@ -28,7 +28,7 @@ unordered_map<string, string> readMSA(string msafile, int minLength = 1, int max
         {
             if(seqline.length() >= minLength && seqline.length() <= maxLength) 
             {
-				97-122
+				//97-122
 				if(lowerflag == 0)
 				{
 					if(seqline[0] >= 97 && seqline[0] <= 122) lowerflag = 1;
