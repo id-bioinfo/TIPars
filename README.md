@@ -165,8 +165,7 @@ ${MY_PATH} is the absolute path of shared directory created in step 4.
 
 # How to Cite
 
-Yongtao Ye, Marcus Shum, Joseph Tsui, Guangchuang Yu, David Smith, Huachen Zhu, Joseph Wu, Yi Guan, Tommy Tsan-Yuk Lam. Robust expansion of phylogeny for fast-growing genome sequence data.
-bioRxiv 2021.12.30.474610; doi: https://doi.org/10.1101/2021.12.30.474610
+Ye Y, Shum MH, Tsui JL, Yu G, Smith DK, et al. (2024) Robust expansion of phylogeny for fast-growing genome sequence data. PLOS Computational Biology 20(2): e1011871. https://doi.org/10.1371/journal.pcbi.1011871
 
 # Acknowledgements
 
