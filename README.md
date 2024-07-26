@@ -117,6 +117,7 @@ cd Benchmark_datasets/NDV
     - output `jplace` placement file that incorporates original tree with placement information
     - mainly for query sequence(s) classification
     - independent placement
+    - an asterisk indicating the 'best' placement when using option '-d print to screen' if there are multiple placement possibilities for a single query.
 
 # Benchmark datasets
 
