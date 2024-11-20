@@ -12,6 +12,7 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.BufferedInputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.BitSet;
@@ -27,6 +28,8 @@ import dr.evolution.tree.FlexibleNode;
 import dr.evolution.tree.FlexibleTree;
 import dr.evolution.tree.Tree;
 import dr.evolution.util.Taxon;
+import com.esotericsoftware.kryo.io.ByteBufferInput;
+import com.esotericsoftware.kryo.Kryo;
 
 public class TIPars {
 
@@ -220,7 +223,7 @@ public class TIPars {
                 double scoreAB = computeNodeScore(nodeAseq, nodeBseq);
                 FlexibleNode myNodeB = selectedNode;
                 FlexibleNode myNodeA = myNodeB.getParent();
-                /// iteratively consider upper branch of A’s parent to A for scaling if
+                /// iteratively consider upper branch of As parent to A for scaling if
                 /// selectedScores[2] > Double.MIN_VALUE and scoreAB <= MinDoubleNumLimit.
                 while ((scoreAB <= MinDoubleNumLimit || myNodeB.getLength() <= MinDoubleNumLimit)
                         && !myNodeA.isRoot()) {
@@ -1101,7 +1104,9 @@ public class TIPars {
 
     // get variants sequence
     private static ConcurrentHashMap<Integer, Byte> getVariantSequenceByNode(FlexibleNode a) {
-        ConcurrentHashMap<Integer, Byte> seq = multationSequencesMap.get(seqIdxMap.get((node2seqName.get(a))));
+        String seqName = node2seqName.get(a);
+        int seqIdx = seqIdxMap.get(seqName);
+        ConcurrentHashMap<Integer, Byte> seq = multationSequencesMap.get(seqIdx);
         return seq;
     }
 
@@ -1854,7 +1859,7 @@ public class TIPars {
 
     public static String[] runMainVCF(InputStream queryVCFInputStream, boolean isMultiplePlacements,
             InputStream multationSequenceMapInputStream, InputStream seqIdxMapInputStream,
-            InputStream refSequenceInputStream, BufferedReader treeBufferedReader) {
+            InputStream refSequenceInputStream, FileReader treeFileReader) {
         String insfn = "";
         // String intfn = "/tipars/ser_obj/input.tree";
         String inafn = "";
@@ -1884,53 +1889,64 @@ public class TIPars {
             _used_scoreTable = _nucleotide_nomenclature_scoreTable;
             if (aa_flag)
                 _used_scoreTable = _aminoacid_scoreTable;
-
             HashMap<Integer, String> queryList = null;
             long parseStartTime = System.currentTimeMillis();
 
+            Kryo kryo = new Kryo();
+            kryo.register(ArrayList.class);
+            kryo.register(ConcurrentHashMap.class);
+            kryo.register(HashMap.class);
+            kryo.register(byte[].class);
+            ByteBufferInput input = null;
             try {
-                ObjectInputStream ois = new ObjectInputStream(multationSequenceMapInputStream);
-                multationSequencesMap = (ArrayList) ois.readObject();
-                ois.close();
+                BufferedInputStream bf1 = new BufferedInputStream(multationSequenceMapInputStream);
+                input = new ByteBufferInput(bf1);
+                multationSequencesMap = kryo.readObject(input, ArrayList.class);
+                input.close();
+                bf1.close();
                 multationSequenceMapInputStream.close();
                 System.out.println("multationSequencesMap loaded");
 
-                ois = new ObjectInputStream(seqIdxMapInputStream);
-                seqIdxMap = (HashMap) ois.readObject();
-                ois.close();
+                BufferedInputStream bf2 = new BufferedInputStream(seqIdxMapInputStream);
+                input = new ByteBufferInput(bf2);
+                seqIdxMap = kryo.readObject(input, HashMap.class);
+                input.close();
+                bf2.close();
                 seqIdxMapInputStream.close();
                 System.out.println("seqIdxMap loaded");
 
-                ois = new ObjectInputStream(refSequenceInputStream);
-                ref_sequence = (byte[]) ois.readObject();
-                ois.close();
+                BufferedInputStream bf3 = new BufferedInputStream(refSequenceInputStream);
+                input = new ByteBufferInput(bf3);
+                ref_sequence = kryo.readObject(input, byte[].class);
+                input.close();
+                bf3.close();
                 refSequenceInputStream.close();
                 System.out.println("ref_sequence loaded");
             } catch (IOException ioe) {
                 ioe.printStackTrace();
-            } catch (ClassNotFoundException c) {
-                System.out.println("Class not found");
+            } catch (Exception c) {
                 c.printStackTrace();
             }
 
             long serializeLoadTime = System.currentTimeMillis() - parseStartTime;
             System.out.println("load serilization items time: " + (double) serializeLoadTime / 1000);
-
+            long queryParseStartTime = System.currentTimeMillis();
             queryList = readVCFFile2Alignment(queryVCFInputStream);
-            long parseTotalTime = System.currentTimeMillis() - parseStartTime;
+            long parseTotalTime = System.currentTimeMillis() - queryParseStartTime;
             System.out.println("vcf/fasta total parse time: " + (double) parseTotalTime / 1000);
 
             long parseTreeStartTime = System.currentTimeMillis();
-            NewickImporter tni = new NewickImporter(treeBufferedReader);
+            NewickImporter tni = new NewickImporter(treeFileReader);
             Tree tree = tni.importTree(null);
             long parseTreeTotalTime = System.currentTimeMillis() - parseTreeStartTime;
             System.out.println("tree parse time: " + (double) parseTreeTotalTime / 1000);
+
+            long startTime2 = System.currentTimeMillis();
 
             // init TIPars
             TIPars myAdd = new TIPars(tree, otype, output_folder);
             Tree outtree = null;
 
-            long startTime2 = System.currentTimeMillis();
 
             if (!printDisInfoOnScreen)
                 System.out.print("Progress: ");
@@ -1946,13 +1962,14 @@ public class TIPars {
                 ConcurrentHashMap<Integer, Byte> query = multationSequencesMap.get(idx);
                 String qid = "q" + (i + 1);
                 String pid = "p" + (i + 1);
-                tiparsOutput[i] = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3], otype,
+                tiparsOutput[i] = myAdd.addQuerySequence(name, query, qid, pid, printDisInfoOnScreen, new double[3],
+                        otype,
                         0);
             }
             long endTime2 = System.currentTimeMillis();
             long totalTime2 = endTime2 - startTime2;
 
-            System.out.println("Insertion time: " + (double) totalTime2 / 1000);
+            System.out.println("Start TIPars + Insertion time: " + (double) totalTime2 / 1000);
             return tiparsOutput;
         } catch (Exception e) {
             e.printStackTrace();
@@ -1961,31 +1978,32 @@ public class TIPars {
     }
 
     // private int getNumberOfQueries(InputStream queryVCFInputStream) {
-    //     BufferedReader reader = new BufferedReader(new InputStreamReader(queryVCFInputStream));
-    //     int i = 1;
-    //     String line;
-    //     while(reader.ready() && i <= 4) {
-    //         line = reader.readLine();
-    //         i++;
-    //     }
-    //     int tabCount = 0;
-    //     for (i = 0; i < line.length(); i++) {
-    //         if (line.charAt(i) == '\t') {
-    //             tabCount++;
-    //         }
-    //     }
-    //     final int vcfDefaultTabs = 8;
-    //     return tabCount - vcfDefaultTabs; 
+    // BufferedReader reader = new BufferedReader(new
+    // InputStreamReader(queryVCFInputStream));
+    // int i = 1;
+    // String line;
+    // while(reader.ready() && i <= 4) {
+    // line = reader.readLine();
+    // i++;
+    // }
+    // int tabCount = 0;
+    // for (i = 0; i < line.length(); i++) {
+    // if (line.charAt(i) == '\t') {
+    // tabCount++;
+    // }
+    // }
+    // final int vcfDefaultTabs = 8;
+    // return tabCount - vcfDefaultTabs;
     // }
 
     public static void main(String[] args) {
-        
+
         try {
             FileInputStream ifsq = new FileInputStream(args[0]);
             FileInputStream ifsm = new FileInputStream(args[2]);
             FileInputStream ifss = new FileInputStream(args[3]);
             FileInputStream ifsr = new FileInputStream(args[4]);
-            BufferedReader ifst = new BufferedReader(new FileReader(args[1]));
+            FileReader ifst = new FileReader(args[1]);
             String[] outputs = runMainVCF(ifsq, false, ifsm, ifss, ifsr, ifst);
             System.out.println(Arrays.toString(outputs));
         } catch (FileNotFoundException e) {
