@@ -14,7 +14,7 @@ RUN apt update
 RUN apt upgrade -y
 
 # Install java JRE
-RUN apt install default-jre -y
+RUN apt install default-jdk -y
 
 # Setting timezone for installing python without manual user input
 ENV TZ=Asia/Hong_Kong
