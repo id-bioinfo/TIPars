@@ -27,6 +27,9 @@ import dr.evolution.tree.FlexibleNode;
 import dr.evolution.tree.FlexibleTree;
 import dr.evolution.tree.Tree;
 import dr.evolution.util.Taxon;
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.ByteBufferOutput;
 
 public class TIPars {
 
@@ -226,7 +229,7 @@ public class TIPars {
                 double scoreAB = computeNodeScore(nodeAseq, nodeBseq);
                 FlexibleNode myNodeB = selectedNode;
                 FlexibleNode myNodeA = myNodeB.getParent();
-                /// iteratively consider upper branch of A’s parent to A for scaling if
+                /// iteratively consider upper branch of As parent to A for scaling if
                 /// selectedScores[2] > Double.MIN_VALUE and scoreAB <= MinDoubleNumLimit.
                 while ((scoreAB <= MinDoubleNumLimit || myNodeB.getLength() <= MinDoubleNumLimit)
                         && !myNodeA.isRoot()) {
@@ -2121,7 +2124,7 @@ public class TIPars {
         return NodeScoreBigTable;
     }
 
-    public static void generateFixedInputsFromTaxaAndAncestralSequences(InputStream taxaSequences, InputStream ancestralSequences) {
+    public static void generateFixedInputsFromTaxaAndAncestralSequences(InputStream taxaSequences, InputStream ancestralSequences, String outputdir) {
 
         _nucleotide_nomenclature = generate_nucleotide_nomenclature();
         _nucleotide_nomenclature_scoreTable = generate_nucleotide_nomenclature_scoreTable(); // IUPAC nucleotide codes
@@ -2130,6 +2133,12 @@ public class TIPars {
 
         _aminoacid_scoreTable = generate_aminoacid_scoreTable(); // Amino acid substitution table using blosum62 matrix
 
+        Kryo kryo = new Kryo();
+        ByteBufferOutput output = null;
+        kryo.register(ArrayList.class);
+        kryo.register(ConcurrentHashMap.class);
+        kryo.register(HashMap.class);
+        kryo.register(byte[].class);
         try {
             // initialize scoring matrix
             _used_scoreTable = _nucleotide_nomenclature_scoreTable;
@@ -2142,29 +2151,28 @@ public class TIPars {
             Arrays.fill(ref_sequence, (byte) '\0');
             readVCFAlignmentFile(taxaSequences);
             readVCFAlignmentFile(ancestralSequences);
-            System.out.println("Finish sequence analysis.");
+            long elapsedParseTime = (System.currentTimeMillis() - parseStartTime) / 1000;
+            System.out.println("Finish sequence analysis. Used seconds: " + elapsedParseTime);
 
+            long serializeStartTime = System.currentTimeMillis();
             System.out.println("Start serialization...");
-            FileOutputStream fos = new FileOutputStream("/tmp/multationSequencesMap.ser");
-            ObjectOutputStream oos = new ObjectOutputStream(fos);
-            oos.writeObject(multationSequencesMap);
-            oos.close();
-            fos.close();
+            output = new ByteBufferOutput(new FileOutputStream(outputdir + "/multationSequencesMap.ser"));
+            kryo.writeObject(output, multationSequencesMap);
+            output.close();
             System.out.println("Serialized MultationSequencesMap");
 
-            fos = new FileOutputStream("/tmp/seqIdxMap.ser");
-            oos = new ObjectOutputStream(fos);
-            oos.writeObject(seqIdxMap);
-            oos.close();
-            fos.close();
+            output = new ByteBufferOutput(new FileOutputStream(outputdir + "/seqIdxMap.ser"));
+            kryo.writeObject(output, seqIdxMap);
+            output.close();
             System.out.println("Serialized seqIdxMap");
 
-            fos = new FileOutputStream("/tmp/ref_sequence.ser");
-            oos = new ObjectOutputStream(fos);
-            oos.writeObject(ref_sequence);
-            oos.close();
-            fos.close();
+            output = new ByteBufferOutput(new FileOutputStream(outputdir + "/ref_sequence.ser"));
+            kryo.writeObject(output, ref_sequence);
+            output.close();
             System.out.println("Serialized ref_sequence");
+            long elapsedSerializeTime = (System.currentTimeMillis() - serializeStartTime) / 1000;
+            System.out.println("Serialzied seconds: " + elapsedSerializeTime);
+            System.out.println("Program ran successfully");
             System.exit(0);
         } catch (Exception e) {
             e.printStackTrace();
@@ -2175,7 +2183,8 @@ public class TIPars {
         try {
             FileInputStream taxaSequences = new FileInputStream(args[0]);
             FileInputStream ancestralSequences = new FileInputStream(args[1]);
-            generateFixedInputsFromTaxaAndAncestralSequences(taxaSequences, ancestralSequences);
+            String outputdir = args[2];
+            generateFixedInputsFromTaxaAndAncestralSequences(taxaSequences, ancestralSequences, outputdir);
         } catch (FileNotFoundException fileNotFoundException) {
             fileNotFoundException.printStackTrace();
         }
