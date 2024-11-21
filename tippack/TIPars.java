@@ -1859,7 +1859,7 @@ public class TIPars {
 
     public static String[] runMainVCF(InputStream queryVCFInputStream, boolean isMultiplePlacements,
             InputStream multationSequenceMapInputStream, InputStream seqIdxMapInputStream,
-            InputStream refSequenceInputStream, FileReader treeFileReader) {
+            InputStream refSequenceInputStream, BufferedReader treeFileReader) {
         String insfn = "";
         // String intfn = "/tipars/ser_obj/input.tree";
         String inafn = "";
@@ -1946,7 +1946,6 @@ public class TIPars {
             // init TIPars
             TIPars myAdd = new TIPars(tree, otype, output_folder);
             Tree outtree = null;
-
 
             if (!printDisInfoOnScreen)
                 System.out.print("Progress: ");
