@@ -1859,7 +1859,7 @@ public class TIPars {
 
     public static String[] runMainVCF(InputStream queryVCFInputStream, boolean isMultiplePlacements,
             InputStream multationSequenceMapInputStream, InputStream seqIdxMapInputStream,
-            InputStream refSequenceInputStream, BufferedReader treeFileReader) {
+            InputStream refSequenceInputStream, BufferedReader treeBufReader) {
         String insfn = "";
         // String intfn = "/tipars/ser_obj/input.tree";
         String inafn = "";
@@ -1936,7 +1936,7 @@ public class TIPars {
             System.out.println("vcf/fasta total parse time: " + (double) parseTotalTime / 1000);
 
             long parseTreeStartTime = System.currentTimeMillis();
-            NewickImporter tni = new NewickImporter(treeFileReader);
+            NewickImporter tni = new NewickImporter(treeBufReader);
             Tree tree = tni.importTree(null);
             long parseTreeTotalTime = System.currentTimeMillis() - parseTreeStartTime;
             System.out.println("tree parse time: " + (double) parseTreeTotalTime / 1000);
@@ -2002,7 +2002,7 @@ public class TIPars {
             FileInputStream ifsm = new FileInputStream(args[2]);
             FileInputStream ifss = new FileInputStream(args[3]);
             FileInputStream ifsr = new FileInputStream(args[4]);
-            FileReader ifst = new FileReader(args[1]);
+            BufferedReader ifst = new BufferedReader(new FileReader(args[1]));
             String[] outputs = runMainVCF(ifsq, false, ifsm, ifss, ifsr, ifst);
             System.out.println(Arrays.toString(outputs));
         } catch (FileNotFoundException e) {
