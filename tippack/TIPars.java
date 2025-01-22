@@ -262,7 +262,9 @@ public class TIPars {
                 if (k == 0) // the best inserted branch
                     return qname + "\t" + "*" + selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0]
                             + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2];
-                // else
+                else
+                    return qname + "\t" + selectAName + "-" + selectedBnid + "\t" + "ABQ_brlen: " + ABQ_brlen[0]
+                            + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2];
                 // System.out.println(qname + "\t" + selectAName + "-" + selectedBnid + "\t" +
                 // "ABQ_brlen: " + ABQ_brlen[0] + "\t" + ABQ_brlen[1] + "\t" + ABQ_brlen[2]);
             }
